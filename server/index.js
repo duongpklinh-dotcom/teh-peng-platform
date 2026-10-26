@@ -1,6 +1,7 @@
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const path = require('path');
+const projectRoutes = require('./routes/projects');
 
 require('dotenv').config({
   path: path.join(__dirname, '.env'),
@@ -10,6 +11,7 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 
 app.use(express.json());
+app.use('/api/projects', projectRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ message: 'Backend is running' });
