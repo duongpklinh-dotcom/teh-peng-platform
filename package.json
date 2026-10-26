@@ -1,0 +1,11 @@
+{
+  "name": "teh-peng-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix client\" \"npm run start --prefix server\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
