@@ -76,3 +76,32 @@
     padding: 26px 22px;
   }
 }
+
+
+/* Project comparison selection */
+
+.compare-button {
+  border: 1px solid #542b0f;
+  background: transparent;
+  color: #542b0f;
+  border-radius: 50px;
+  padding: 9px 15px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 0.2s ease;
+}
+
+.compare-button:hover {
+  background: #e9e2d7;
+}
+
+.compare-button.selected {
+  background: #542b0f;
+  color: white;
+}
+
+.compare-button:focus-visible {
+  outline: 2px solid #9d7554;
+  outline-offset: 3px;
+}
+
