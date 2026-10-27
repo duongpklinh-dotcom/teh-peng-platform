@@ -53,6 +53,7 @@ class AuthController {
     };
   }
 
+
 async login({ email, password }) {
   if (
     typeof email !== 'string' ||
@@ -62,7 +63,6 @@ async login({ email, password }) {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-
   const users = this.db.collection('users');
 
   const user = await users.findOne({
@@ -82,9 +82,49 @@ async login({ email, password }) {
     user.passwordHash
   );
 
-  if (!passwordMatches) {
+  
+
+    if (!passwordMatches) {
+    await users.findOneAndUpdate(
+        {
+        _id: user._id,
+        accountStatus: 'active'
+        },
+        [
+        {
+            $set: {
+            failedLoginAttempts: {
+                $add: [
+                { $ifNull: ['$failedLoginAttempts', 0] },
+                1
+                ]
+            }
+            }
+        },
+        {
+            $set: {
+            accountStatus: {
+                $cond: [
+                { $gte: ['$failedLoginAttempts', 5] },
+                'locked',
+                '$accountStatus'
+                ]
+            }
+            }
+        }
+        ],
+        { returnDocument: 'after' }
+    );
+
     throw new Error('Invalid email or password');
-  }
+    }
+
+
+
+  await users.updateOne(
+    { _id: user._id },
+    { $set: { failedLoginAttempts: 0 } }
+  );
 
   return {
     id: user._id.toString(),
@@ -93,6 +133,7 @@ async login({ email, password }) {
     role: user.role
   };
 }
+
 
 }
 

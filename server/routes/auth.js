@@ -1,7 +1,41 @@
 const express = require('express');
+const { generateToken } = require('../middleware/csrf');
 const AuthController = require('../controllers/AuthController');
+const { rateLimit } = require('express-rate-limit');
 
 const router = express.Router();
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Too many login attempts. Please try again later.'
+  }
+});
+
+
+router.get('/csrf-token', (req, res, next) => {
+  try {
+    const token = generateToken(req);
+
+    req.session.save((error) => {
+      if (error) return next(error);
+
+      res.json({
+        success: true,
+        data: { csrfToken: token }
+      });
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+
 
 router.post('/register', async (req, res) => {
   try {
@@ -24,7 +58,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const controller = new AuthController(req.app.locals.db);
     const user = await controller.login(req.body);
