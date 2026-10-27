@@ -3,6 +3,9 @@ const { MongoClient } = require('mongodb');
 const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo').default;
+const {
+  csrfSynchronisedProtection
+} = require('./middleware/csrf');
 
 const projectRoutes = require('./routes/projects');
 const authRoutes = require('./routes/auth');
@@ -67,9 +70,27 @@ async function startServer() {
       }
     }));
 
+    app.use(csrfSynchronisedProtection);
+
+    app.use('/api/projects', projectRoutes);
+    app.use('/api/auth', authRoutes);
+
     // Register API routes AFTER session middleware
     app.use('/api/projects', projectRoutes);
     app.use('/api/auth', authRoutes);
+
+
+    app.use((err, req, res, next) => {
+      if (err.code === 'EBADCSRFTOKEN') {
+        return res.status(403).json({
+          success: false,
+          error: 'Invalid or missing CSRF token'
+        });
+      }
+
+      next(err);
+    });
+
 
     console.log('MongoDB connected successfully');
 

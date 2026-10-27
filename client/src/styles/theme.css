@@ -6,3 +6,73 @@
 .dev-health button{border:1px solid #b58a70;background:transparent;color:#fff;border-radius:30px;padding:7px 14px}
 .inspiration-upload{padding:18px 20px;border:1px dashed #b6a899;background:#f2ece4;border-radius:14px;margin:0 0 30px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .inspiration-upload input{font-size:13px;max-width:100%}
+
+/* Authentication pages — Teh Peng design system */
+
+.auth-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 75vh;
+  text-align: center;
+}
+
+.auth-page h1 {
+  font-size: clamp(38px, 4vw, 60px);
+  margin: 22px 0 12px;
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 480px;
+  padding: 42px;
+  margin: 28px auto 0;
+  text-align: left;
+  border: 1px solid #e4ded6;
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(84, 43, 15, 0.04);
+}
+
+.auth-form label {
+  font-size: 13px;
+  color: #4e3c2e;
+}
+
+.auth-form input {
+  width: 100%;
+  min-height: 50px;
+  transition: border-color 0.2s ease;
+}
+
+.auth-form input:focus {
+  outline: 2px solid #9d7554;
+  outline-offset: 2px;
+}
+
+.auth-submit {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 8px;
+}
+
+.auth-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.auth-form .text-link {
+  text-align: center;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+@media (max-width: 700px) {
+  .auth-page {
+    min-height: 65vh;
+  }
+
+  .auth-form {
+    padding: 26px 22px;
+  }
+}

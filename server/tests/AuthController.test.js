@@ -90,22 +90,24 @@ test('Logs in a user with the correct password', async () => {
 
   const passwordHash = await bcrypt.hash('SecurePassword123!', 12);
 
-  const fakeDb = {
+  
+    const fakeDb = {
     collection: (name) => {
-      assert.equal(name, 'users');
+        assert.equal(name, 'users');
 
-      return {
+        return {
         findOne: async () => ({
-          _id: 'user123',
-          name: 'Alice',
-          email: 'alice@example.com',
-          passwordHash,
-          role: 'customer',
-          accountStatus: 'active'
-        })
-      };
+            _id: 'user123',
+            name: 'Alice',
+            email: 'alice@example.com',
+            passwordHash,
+            role: 'customer',
+            accountStatus: 'active'
+        }),
+        updateOne: async () => ({ modifiedCount: 1 })
+        };
     }
-  };
+    };
 
   const controller = new AuthController(fakeDb);
 
@@ -125,17 +127,27 @@ test('Rejects login with an incorrect password', async () => {
 
   const passwordHash = await bcrypt.hash('SecurePassword123!', 12);
 
-  const fakeDb = {
+  
+    
+    const fakeDb = {
     collection: () => ({
-      findOne: async () => ({
+        findOne: async () => ({
         _id: 'user123',
         email: 'alice@example.com',
         passwordHash,
         role: 'customer',
+        accountStatus: 'active',
+        failedLoginAttempts: 0
+        }),
+
+        findOneAndUpdate: async () => ({
+        failedLoginAttempts: 1,
         accountStatus: 'active'
-      })
+        })
     })
-  };
+    };
+
+
 
   const controller = new AuthController(fakeDb);
 
@@ -147,6 +159,7 @@ test('Rejects login with an incorrect password', async () => {
     /Invalid email or password/
   );
 });
+
 
 
 test('Rejects login when the account is locked', async () => {
@@ -163,7 +176,11 @@ test('Rejects login when the account is locked', async () => {
         passwordHash,
         role: 'customer',
         accountStatus: 'locked'
-      })
+      }),
+
+      updateOne: async () => {
+        throw new Error('Locked account should not be updated');
+      }
     })
   };
 
@@ -178,3 +195,65 @@ test('Rejects login when the account is locked', async () => {
   );
 });
 
+
+
+test('Locks an account after 5 failed login attempts', async () => {
+  const bcrypt = require('bcryptjs');
+  const AuthController = require('../controllers/AuthController');
+
+  const passwordHash = await bcrypt.hash('CorrectPassword123!', 12);
+
+  const user = {
+    _id: 'user123',
+    email: 'alice@example.com',
+    passwordHash,
+    role: 'customer',
+    accountStatus: 'active',
+    failedLoginAttempts: 4
+  };
+
+  
+    
+    
+    const fakeDb = {
+    collection: () => ({
+        findOne: async () => user,
+
+        findOneAndUpdate: async (filter, pipeline) => {
+        assert.equal(filter.accountStatus, 'active');
+        assert.equal(Array.isArray(pipeline), true);
+
+        // Simulate MongoDB's atomic update pipeline
+        const nextAttempts = (user.failedLoginAttempts || 0) + 1;
+
+        user.failedLoginAttempts = nextAttempts;
+
+        if (nextAttempts >= 5) {
+            user.accountStatus = 'locked';
+        }
+
+        return { ...user };
+        },
+
+        updateOne: async () => {
+        throw new Error('Locking must use one atomic update');
+        }
+    })
+    };
+
+
+
+
+  const controller = new AuthController(fakeDb);
+
+  await assert.rejects(
+    controller.login({
+      email: 'alice@example.com',
+      password: 'WrongPassword123!'
+    }),
+    /Invalid email or password/
+  );
+
+  assert.equal(user.failedLoginAttempts, 5);
+  assert.equal(user.accountStatus, 'locked');
+});
