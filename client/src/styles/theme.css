@@ -79,7 +79,6 @@
 
 
 /* Project comparison selection */
-
 .compare-button {
   border: 1px solid #542b0f;
   background: transparent;
@@ -103,5 +102,136 @@
 .compare-button:focus-visible {
   outline: 2px solid #9d7554;
   outline-offset: 3px;
+}
+
+
+
+/* ===== NAVBAR UX IMPROVEMENTS ===== */
+
+/* Main navbar layout */
+.site-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  min-height: 88px;
+  padding: 0 3.5vw;
+  gap: 22px;
+}
+
+/* 1. Logo */
+.brand {
+  order: 1;
+  flex-shrink: 0;
+}
+
+/* 2. Search bar */
+.header-search {
+  order: 2;
+  flex: 1 1 300px;
+  max-width: 450px;
+  min-width: 150px;
+}
+
+/* 3. Navigation links */
+.main-links {
+  order: 3;
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  gap: 0;
+  width: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Full clickable navigation area */
+.main-links a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 13px;
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Active page — full bottom border */
+.main-links a.active,
+.main-links a[aria-current="page"] {
+  border-bottom: 3px solid #94562e;
+  color: #542b0f;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Hover without text underline */
+.main-links a:hover {
+  text-decoration: none;
+  background: rgba(148, 86, 46, 0.06);
+  color: #94562e;
+}
+
+/* 4. Login / Register */
+.account-menu {
+  order: 4;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* Smaller laptop screens */
+@media (max-width: 1250px) {
+  .site-header {
+    flex-wrap: wrap;
+    gap: 0 16px;
+    padding-top: 12px;
+  }
+
+  .header-search {
+    max-width: none;
+  }
+
+  .main-links {
+    order: 5;
+    width: 100%;
+    min-height: 54px;
+    justify-content: center;
+    flex-wrap: nowrap;
+  }
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .site-header {
+    gap: 12px;
+    padding: 14px 16px 0;
+  }
+
+  .brand {
+    order: 1;
+  }
+
+  .account-menu {
+    order: 2;
+  }
+
+  .header-search {
+    order: 3;
+    flex-basis: 100%;
+    width: 100%;
+    max-width: none;
+  }
+
+  .main-links {
+    order: 4;
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    min-height: 52px;
+  }
+
+  .main-links a {
+    padding: 0 12px;
+    flex-shrink: 0;
+  }
 }
 
