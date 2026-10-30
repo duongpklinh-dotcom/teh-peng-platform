@@ -23,6 +23,7 @@ import Categories from './pages/management/Categories';
 import WeeklyReports from './pages/management/WeeklyReports';
 import UserAccounts from './pages/admin/UserAccounts';
 import LoginHistory from './pages/admin/LoginHistory';
+import AddProject from './pages/designer/AddProject';
 
 async function getCsrfToken() {
   const response = await fetch('/api/auth/csrf-token', {
@@ -129,8 +130,10 @@ export default function App() {
             <Route path="/account/profile" element={<ProfileSettings />} />
 
             <Route path="/designer/projects" element={<MyProjects />} />
+            <Route path="/designer/projects/new" element={<AddProject user={user} />} />
             <Route path="/designer/projects/:id/edit" element={<EditProject />} />
             <Route path="/designer/featured" element={<FeaturedProjects />} />
+            
 
             <Route path="/management/categories" element={<Categories />} />
             <Route path="/management/reports" element={<WeeklyReports />} />

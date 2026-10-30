@@ -12,3 +12,6 @@ cookies.txt
 # Temporary authentication test files
 cookies.txt
 csrf-response.json
+
+# Locally uploaded project images
+server/uploads/

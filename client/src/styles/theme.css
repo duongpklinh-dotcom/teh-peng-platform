@@ -235,3 +235,280 @@
   }
 }
 
+
+
+/* =========================================
+   ADD NEW PROJECT PAGE
+   ========================================= */
+
+/* Centre the page content */
+.add-project-page .page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.add-project-page .page > .eyebrow {
+  display: table;
+  margin: 0 auto;
+}
+
+.add-project-page .page > h1 {
+  text-align: center;
+  margin: 24px 0 35px;
+}
+
+/* Main form container */
+.add-project-page .add-project-form {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 42px 48px;
+  border: 1px solid #e4ded6;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgba(84, 43, 15, 0.04);
+}
+
+/* Individual form sections */
+.add-project-group {
+  padding: 0 0 32px;
+  border-bottom: 1px solid #e9e2d9;
+}
+
+.add-project-group:last-of-type {
+  border-bottom: none;
+  padding-bottom: 8px;
+}
+
+.add-project-group h2 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #292420;
+  margin: 0 0 22px;
+}
+
+/* Two-column form layout */
+.add-project-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 24px;
+}
+
+/* Fields that span both columns */
+.add-project-wide {
+  grid-column: 1 / -1;
+}
+
+/* Field labels */
+.add-project-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #292420;
+  min-width: 0;
+}
+
+/* Consistent input appearance */
+.add-project-form input:not([type="file"]),
+.add-project-form select,
+.add-project-form textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 13px 15px;
+  border: 1px solid #d4cabe;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #292420;
+  font-size: 14px;
+  font-weight: 400;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.add-project-form textarea {
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.add-project-form input:focus,
+.add-project-form select:focus,
+.add-project-form textarea:focus {
+  border-color: #94562e;
+  box-shadow: 0 0 0 3px rgba(148, 86, 46, 0.10);
+}
+
+.add-project-form input::placeholder,
+.add-project-form textarea::placeholder {
+  color: #91877c;
+}
+
+.add-project-form small {
+  font-size: 12px;
+  color: #857a6f;
+  font-weight: 400;
+  text-align: right;
+}
+
+/* Image upload area */
+.add-project-form .add-project-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 160px;
+  padding: 28px;
+  background: #faf8f5;
+  border: 2px dashed #c9b9a9;
+  border-radius: 14px;
+  color: #542b0f;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.add-project-upload:hover {
+  background: #f2ebe3;
+  border-color: #94562e;
+}
+
+.add-project-upload span {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.add-project-upload input[type="file"] {
+  max-width: 100%;
+  font-size: 13px;
+  color: #605850;
+  cursor: pointer;
+}
+
+/* Image preview grid */
+.add-project-previews {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.add-project-preview {
+  overflow: hidden;
+  background: #faf8f5;
+  border: 1px solid #e4ded6;
+  border-radius: 12px;
+  padding-bottom: 14px;
+}
+
+.add-project-preview img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.add-project-preview span {
+  display: block;
+  margin: 12px 12px 8px;
+  color: #4e3c2e;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.add-project-preview button {
+  margin-left: 12px;
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: #94562e;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-project-preview button:hover {
+  text-decoration: underline;
+}
+
+/* Error messages */
+.add-project-error {
+  padding: 14px 16px;
+  background: #fff2f0;
+  border: 1px solid #e8b6ac;
+  border-radius: 10px;
+  color: #a33b2a;
+  font-size: 14px;
+}
+
+/* Bottom form actions */
+.add-project-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 25px;
+  padding-top: 8px;
+}
+
+.add-project-actions .pill {
+  min-width: 150px;
+}
+
+.add-project-actions .pill:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .add-project-page .add-project-form {
+    padding: 32px;
+  }
+
+  .add-project-previews {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .add-project-page .add-project-form {
+    padding: 24px 20px;
+  }
+
+  .add-project-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .add-project-wide {
+    grid-column: auto;
+  }
+
+  .add-project-group h2 {
+    font-size: 20px;
+  }
+
+  .add-project-previews {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .add-project-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 18px;
+  }
+
+  .add-project-actions .pill {
+    width: 100%;
+  }
+
+  .add-project-actions .text-link {
+    text-align: center;
+  }
+}
+
