@@ -19,6 +19,12 @@ const PORT = Number(process.env.PORT) || 3001;
 
 app.use(express.json());
 
+// Serve uploaded project images
+app.use(
+  '/uploads/projects',
+  express.static(path.join(__dirname, 'uploads/projects'))
+);
+
 app.get('/api/health', (req, res) => {
   res.json({ message: 'Backend is running' });
 });
