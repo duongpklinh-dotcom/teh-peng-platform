@@ -1,14 +1,17 @@
+
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo').default;
+
 const {
   csrfSynchronisedProtection
 } = require('./middleware/csrf');
 
 const projectRoutes = require('./routes/projects');
 const authRoutes = require('./routes/auth');
+const consultationRoutes = require('./routes/consultations');
 
 require('dotenv').config({
   path: path.join(__dirname, '.env'),
@@ -26,7 +29,9 @@ app.use(
 );
 
 app.get('/api/health', (req, res) => {
-  res.json({ message: 'Backend is running' });
+  res.json({
+    message: 'Backend is running'
+  });
 });
 
 async function startServer() {
@@ -38,7 +43,9 @@ async function startServer() {
       !process.env.MONGODB_DB ||
       !process.env.SESSION_SECRET
     ) {
-      throw new Error('Missing required environment settings');
+      throw new Error(
+        'Missing required environment settings'
+      );
     }
 
     client = new MongoClient(process.env.MONGODB_URI, {
@@ -48,6 +55,7 @@ async function startServer() {
     await client.connect();
 
     const db = client.db(process.env.MONGODB_DB);
+
     await db.command({ ping: 1 });
 
     await db.collection('users').createIndex(
@@ -56,8 +64,8 @@ async function startServer() {
     );
 
     app.locals.db = db;
+    app.locals.mongoClient = client;
 
-    // Session middleware must run before protected routes
     app.use(session({
       name: 'teh_peng.sid',
       secret: process.env.SESSION_SECRET,
@@ -80,11 +88,7 @@ async function startServer() {
 
     app.use('/api/projects', projectRoutes);
     app.use('/api/auth', authRoutes);
-
-    // Register API routes AFTER session middleware
-    app.use('/api/projects', projectRoutes);
-    app.use('/api/auth', authRoutes);
-
+    app.use('/api/consultations', consultationRoutes);
 
     app.use((err, req, res, next) => {
       if (err.code === 'EBADCSRFTOKEN') {
@@ -97,11 +101,12 @@ async function startServer() {
       next(err);
     });
 
-
     console.log('MongoDB connected successfully');
 
     app.listen(PORT, () => {
-      console.log(`Backend running at http://localhost:${PORT}`);
+      console.log(
+        `Backend running at http://localhost:${PORT}`
+      );
     });
 
   } catch (error) {
