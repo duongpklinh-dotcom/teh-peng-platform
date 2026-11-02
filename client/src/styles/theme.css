@@ -512,3 +512,316 @@
   }
 }
 
+
+/* =========================================
+   MY PROJECTS — ACTION MENU
+   ========================================= */
+
+/* Actions column container */
+.project-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* Three-dot menu wrapper */
+.project-actions-menu {
+  position: relative;
+  display: inline-block;
+}
+
+/* Three-dot trigger button */
+.project-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 38px;
+  height: 38px;
+  padding: 0;
+
+  background: transparent;
+  color: #542b0f;
+  border: 1px solid transparent;
+  border-radius: 9px;
+
+  text-decoration: none;
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* Remove default details arrow */
+.project-actions-menu summary {
+  display: inline-flex;
+  list-style: none;
+}
+
+.project-actions-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Hover and open states */
+.project-action-btn:hover,
+.project-actions-menu[open] > summary {
+  background: #f2ebe3;
+  border-color: #e4d7c8;
+  color: #94562e;
+}
+
+.project-action-btn:focus-visible {
+  outline: 2px solid #94562e;
+  outline-offset: 2px;
+}
+
+/* Dropdown container */
+.project-actions-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 100;
+
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  width: 230px;
+  padding: 8px;
+
+  background: #ffffff;
+  border: 1px solid #e4ded6;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(84, 43, 15, 0.12);
+}
+
+/* Shared dropdown item styles */
+.project-actions-dropdown a,
+.project-actions-dropdown button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+
+  color: #542b0f;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+
+  cursor: pointer;
+}
+
+/* Hover on available actions */
+.project-actions-dropdown a:hover,
+.project-actions-dropdown button:hover:not(:disabled) {
+  background: #f4f1eb;
+  color: #94562e;
+  text-decoration: none;
+}
+
+/* Keyboard accessibility */
+.project-actions-dropdown a:focus-visible,
+.project-actions-dropdown button:focus-visible {
+  outline: 2px solid #94562e;
+  outline-offset: -2px;
+}
+
+/* Disabled actions */
+.project-actions-dropdown button:disabled {
+  color: #a89e94;
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+/* Coming soon text */
+.project-actions-dropdown span {
+  color: #a89e94;
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+/* Delete project option */
+.project-actions-dropdown .project-menu-danger {
+  color: #b76b60;
+}
+
+/* Disabled delete option */
+.project-actions-dropdown .project-menu-danger:disabled {
+  color: #b76b60;
+  opacity: 0.65;
+}
+
+/* Small screen adjustments */
+@media (max-width: 700px) {
+  .project-row-actions {
+    gap: 4px;
+  }
+
+  .project-action-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .project-actions-dropdown {
+    width: 210px;
+  }
+}
+
+
+/* =========================================
+   MY PROJECTS — DROPDOWN MENU ITEMS
+   ========================================= */
+
+.project-actions-dropdown .project-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+
+  width: 100%;
+  min-height: 42px;
+  padding: 11px 12px;
+
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+
+  color: #542b0f;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* Icons */
+.project-menu-item svg {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+}
+
+/* Labels */
+.project-actions-dropdown .project-menu-item span {
+  color: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Only Edit Project is interactive */
+.project-actions-dropdown a.project-menu-item {
+  cursor: pointer;
+}
+
+.project-actions-dropdown a.project-menu-item:hover {
+  background: #f4f1eb;
+  color: #94562e;
+  text-decoration: none;
+}
+
+/* Non-functional options */
+.project-actions-dropdown div.project-menu-item {
+  cursor: default;
+}
+
+/* Delete option */
+.project-actions-dropdown .project-menu-danger {
+  color: #b76b60;
+}
+
+
+/* =========================================
+   MY PROJECTS — PUBLICATION TOGGLE
+   ========================================= */
+
+.project-publication {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+/* Toggle track */
+.publication-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+
+  width: 46px;
+  height: 26px;
+  padding: 3px;
+
+  background: #d8d0c7;
+  border: 1px solid #c9bfb4;
+  border-radius: 50px;
+
+  cursor: pointer;
+  flex-shrink: 0;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+/* Toggle knob */
+.publication-toggle-knob {
+  display: block;
+  width: 18px;
+  height: 18px;
+
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+
+  transform: translateX(0);
+  transition: transform 0.2s ease;
+}
+
+/* Published — toggle ON */
+.publication-toggle.is-published {
+  background: #542b0f;
+  border-color: #542b0f;
+}
+
+.publication-toggle.is-published .publication-toggle-knob {
+  transform: translateX(20px);
+}
+
+/* Hover */
+.publication-toggle:hover:not(:disabled) {
+  border-color: #94562e;
+}
+
+/* Keyboard accessibility */
+.publication-toggle:focus-visible {
+  outline: 2px solid #94562e;
+  outline-offset: 3px;
+}
+
+/* Disabled while updating */
+.publication-toggle:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* Publication text */
+.publication-status-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #605850;
+}
+

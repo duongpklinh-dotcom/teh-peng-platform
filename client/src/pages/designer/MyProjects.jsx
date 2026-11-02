@@ -7,8 +7,9 @@ export default function MyProjects() {
   const location = useLocation();
 
 
-const navigate = useNavigate();
-const [toast, setToast] = useState(location.state?.notice || '');
+  const navigate = useNavigate();
+  const [toast, setToast] = useState(location.state?.notice || '');
+
 
 useEffect(() => {
   if (!toast) return;
@@ -29,6 +30,8 @@ useEffect(() => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [updatingId, setUpdatingId] = useState(null);
+  const [publicationError, setPublicationError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -67,6 +70,68 @@ useEffect(() => {
       active = false;
     };
   }, []);
+
+   async function togglePublication(project) {
+      if (updatingId) return;
+
+      const newStatus = !project.isPublished;
+
+      setUpdatingId(project.id);
+      setPublicationError('');
+
+      try {
+        // Get CSRF token
+        const tokenResponse = await fetch('/api/auth/csrf-token', {
+          credentials: 'include'
+        });
+
+        const tokenResult = await tokenResponse.json();
+
+        if (!tokenResponse.ok) {
+          throw new Error('Unable to verify request');
+        }
+
+        // Update publication status
+        const response = await fetch(
+          `/api/projects/mine/${project.id}/publication`,
+          {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-csrf-token': tokenResult.data.csrfToken
+            },
+            body: JSON.stringify({
+              isPublished: newStatus
+            })
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.error || 'Unable to update publication status'
+          );
+        }
+
+        // Update the table after MongoDB confirms success
+        setProjects(current =>
+          current.map(item =>
+            item.id === project.id
+              ? { ...item, isPublished: newStatus }
+              : item
+          )
+        );
+
+      } catch (err) {
+        setPublicationError(
+          err.message || 'Unable to update publication status'
+        );
+      } finally {
+        setUpdatingId(null);
+      }
+    }
 
   return (
     <Workspace
@@ -147,6 +212,11 @@ useEffect(() => {
         </p>
       )}
 
+      {publicationError && (
+      <p role="alert" className="add-project-error">
+        {publicationError}
+      </p>
+    )}
       {/* Project listing */}
       <div className="panel">
         {loading ? (
@@ -163,7 +233,8 @@ useEffect(() => {
                 <th>Project</th>
                 <th>Style</th>
                 <th>Featured</th>
-                <th>Visibility</th>
+                <th>Pulication</th>
+                <th>Date Created</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -176,19 +247,152 @@ useEffect(() => {
                   <td>
                     {project.featured ? 'Yes' : 'No'}
                   </td>
+                  
                   <td>
-                    {project.isPublished
-                      ? 'Published'
-                      : 'Unpublished'}
+                    <div className="project-publication">
+                      <button
+                        type="button"
+                        role="switch"
+                        className={`publication-toggle ${
+                          project.isPublished ? 'is-published' : ''
+                        }`}
+                        aria-checked={Boolean(project.isPublished)}
+                        aria-label={`Publish ${project.title}`}
+                        title={project.isPublished
+                          ? 'Unpublish project'
+                          : 'Publish project'}
+                        onClick={() => {
+                          console.log('Publication toggle clicked:', project.title);
+                          togglePublication(project);
+                        }}
+                        disabled={updatingId !== null}
+                      >
+                        <span className="publication-toggle-knob" />
+                      </button>
+
+                      <span className="publication-status-label">
+                        {updatingId === project.id
+                          ? 'Updating...'
+                          : project.isPublished
+                            ? 'Published'
+                            : 'Unpublished'}
+                      </span>
+                    </div>
                   </td>
+
                   <td>
-                    <Link
-                      className="text-link"
-                      to={`/designer/projects/${project.id}/edit`}
-                    >
-                      Edit
-                    </Link>
+                    {project.createdAt &&
+                    !Number.isNaN(new Date(project.createdAt).getTime())
+                      ? new Date(project.createdAt).toLocaleDateString('en-SG', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          timeZone: 'Asia/Singapore'
+                        })
+                      : '—'}
                   </td>
+                  
+
+                  
+                  <td>
+                    <div className="project-row-actions">
+
+                      {/* VIEW ICON — visual only */}
+                      <span
+                        className="project-action-btn"
+                        title="View project"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24"
+                          fill="none" stroke="currentColor" strokeWidth="1.8"
+                          strokeLinecap="round" strokeLinejoin="round"
+                          aria-hidden="true">
+                          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7Z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      </span>
+
+                      {/* EDIT ICON — functional */}
+                      <Link
+                        className="project-action-btn"
+                        to={`/designer/projects/${project.id}/edit`}
+                        title="Edit project"
+                        aria-label={`Edit ${project.title}`}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24"
+                          fill="none" stroke="currentColor" strokeWidth="1.8"
+                          strokeLinecap="round" strokeLinejoin="round"
+                          aria-hidden="true">
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z" />
+                        </svg>
+                      </Link>
+
+                      {/* THREE-DOT MENU */}
+                      <details className="project-actions-menu">
+                        <summary
+                          className="project-action-btn"
+                          aria-label={`More actions for ${project.title}`}
+                          title="More actions"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24"
+                            fill="currentColor" aria-hidden="true">
+                            <circle cx="5" cy="12" r="1.8" />
+                            <circle cx="12" cy="12" r="1.8" />
+                            <circle cx="19" cy="12" r="1.8" />
+                          </svg>
+                        </summary>
+
+                        <div className="project-actions-dropdown">
+
+                          {/* VIEW PROJECT — visual only */}
+                          <div className="project-menu-item">
+                            <svg width="17" height="17" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" strokeWidth="1.8"
+                              strokeLinecap="round" strokeLinejoin="round"
+                              aria-hidden="true">
+                              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7Z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            <span>View project</span>
+                          </div>
+
+                          {/* EDIT PROJECT — functional */}
+                          <Link
+                            className="project-menu-item"
+                            to={`/designer/projects/${project.id}/edit`}
+                          >
+                            <svg width="17" height="17" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" strokeWidth="1.8"
+                              strokeLinecap="round" strokeLinejoin="round"
+                              aria-hidden="true">
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z" />
+                            </svg>
+                            <span>Edit project</span>
+                          </Link>
+
+                          {/* DELETE PROJECT — visual only */}
+                          <div className="project-menu-item project-menu-danger">
+                            <svg width="17" height="17" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" strokeWidth="1.8"
+                              strokeLinecap="round" strokeLinejoin="round"
+                              aria-hidden="true">
+                              <path d="M3 6h18" />
+                              <path d="M8 6V4h8v2" />
+                              <path d="M5 6l1 15h12l1-15" />
+                              <path d="M10 10v7M14 10v7" />
+                            </svg>
+                            <span>Delete project</span>
+                          </div>
+
+                        </div>
+                      </details>
+
+                    </div>
+                  </td>
+
+
+
                 </tr>
               ))}
             </tbody>

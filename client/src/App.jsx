@@ -131,7 +131,8 @@ export default function App() {
 
             <Route path="/designer/projects" element={<MyProjects />} />
             <Route path="/designer/projects/new" element={<AddProject user={user} />} />
-            <Route path="/designer/projects/:id/edit" element={<EditProject />} />
+
+            <Route path="/designer/projects/:id/edit" element={<EditProject user={user} />} />
             <Route path="/designer/featured" element={<FeaturedProjects />} />
             
 
