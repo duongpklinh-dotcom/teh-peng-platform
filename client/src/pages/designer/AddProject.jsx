@@ -139,6 +139,7 @@ export default function AddProject({ user }) {
       projectData.append('propertyType', form.propertyType);
       projectData.append('roomType', form.roomType);
       projectData.append('projectStatus', form.projectStatus);
+      projectData.append('category', form.category);
 
       if (form.numRooms !== '') {
         projectData.append('numRooms', form.numRooms);
