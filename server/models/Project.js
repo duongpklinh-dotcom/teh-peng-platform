@@ -48,11 +48,11 @@ constructor({
     }
 
     if (
-      this.category !== null &&
-      !['Residential', 'Commercial'].includes(this.category)
-    ) {
-      throw new Error('Category must be Residential or Commercial');
-    }
+    this.category &&
+    !['Residential', 'Commercial'].includes(this.category)
+  ) {
+    throw new Error('Category must be Residential or Commercial');
+  }
 
     if (this.estimatedBudget !== null &&
         (typeof this.estimatedBudget !== 'number' ||
@@ -60,6 +60,10 @@ constructor({
         this.estimatedBudget < 0)) {
       throw new Error('Estimated budget must be a non-negative number');
     }
+
+    if (!['ongoing', 'completed'].includes(this.projectStatus)) {
+      throw new Error('Invalid project status');
+}
 
   }
 }

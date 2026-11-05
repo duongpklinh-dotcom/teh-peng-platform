@@ -126,9 +126,6 @@ export default function AddProject({ user }) {
         );
       }
 
-
-      // Send project details as JSON.
-      // Image uploads will be connected separately.
      
       // Prepare project information and selected images
       const projectData = new FormData();
