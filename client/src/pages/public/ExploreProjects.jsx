@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ProjectCard from '../../components/ProjectCard';
-import { projects } from '../../data/demo';
 
 // Frontend-only demo search.
 // Actual API integration belongs in the search feature.
@@ -15,34 +14,145 @@ export default function ExploreProjects({
   const query = params.get('q') || '';
 
   const [term, setTerm] = useState(query);
-  const [category, setCategory] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [apiProjects, setApiProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const [broaderSuggestions, setBroaderSuggestions] = useState([]);
   const [style, setStyle] = useState('');
   const [propertyType, setPropertyType] = useState('');
+  const [roomType, setRoomType] = useState('');
+  const [projectStatus, setProjectStatus] = useState('');
   const [imageName, setImageName] = useState('');
+  const [sortOption, setSortOption] = useState('');
 
   useEffect(() => setTerm(query), [query]);
 
-  const results = projects.filter((project) => {
-    const searchable = [
-      project.title,
-      project.description,
-      project.style,
-      project.category,
-      project.propertyType,
-      project.designer
-    ].join(' ').toLowerCase();
+  useEffect(() => {
+    const keyword = term.trim();
 
-    return (
-      searchable.includes(query.toLowerCase()) &&
-      (!category || project.category === category) &&
-      (!style || project.style === style) &&
-      (!propertyType || project.propertyType === propertyType)
-    );
-  });
+    if (!keyword) {
+      setSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function fetchSuggestions() {
+      try {
+        const response = await fetch(
+          `http://localhost:3001/api/projects/search/suggestions?keyword=${encodeURIComponent(keyword)}`,
+          { signal: controller.signal }
+        );
+
+        if (!response.ok) {
+          throw new Error('Unable to retrieve suggestions.');
+        }
+
+        const result = await response.json();
+
+        setSuggestions(result.data);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          setSuggestions([]);
+        }
+      }
+    }
+
+    fetchSuggestions();
+
+    return () => controller.abort();
+  },[term]);
+
+  useEffect (() => {
+    const controller = new AbortController();
+
+    async function fetchProjects() {
+      const hasSearchCriteria =
+        query.trim() !== '' ||
+        style !== '' ||
+        propertyType !== '' ||
+        roomType !== '' ||
+        projectStatus !== '';
+      if (!hasSearchCriteria) {
+        setApiProjects([]);
+        setBroaderSuggestions([]);
+        setSearchError('');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setSearchError('');
+
+      try {
+        const searchParams = new URLSearchParams({
+          keyword: query,
+          sortOption: sortOption,
+          propertyType: propertyType,
+          selectedStyles: style,
+          roomType: roomType,
+          projectStatus: projectStatus
+        });
+
+        const response = await fetch(
+          `http://localhost:3001/api/projects/search?${searchParams.toString()}`,
+          { signal: controller.signal }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || result.success !== true) {
+          throw new Error(result.error || 'Failed to search projects.');
+        }
+
+        setApiProjects(result.data);
+        setBroaderSuggestions(result.suggestions || []);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          setSearchError(error.message);
+          setApiProjects([]);
+          setBroaderSuggestions([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchProjects();
+
+    return () => controller.abort();
+  }, [query, sortOption, propertyType, style, roomType, projectStatus]);
+
+  const displayProjects = apiProjects.map((project) => ({
+    ...project,
+    id: project._id,
+    image: Array.isArray(project.images) && project.images.length > 0
+      ? typeof project.images[0] === 'string'
+        ? project.images [0]
+        : project.images[0]?.url || '/assets/project-placeholder.svg'
+      : '/assets/project-placeholder.svg',
+    category: project.category || '',
+    designer: project.designer || 'Designer not specified'
+  }));
 
   function submit(event) {
     event.preventDefault();
     setParams(term.trim() ? { q: term.trim() } : {});
+  }
+
+  function resetSearch() {
+    setTerm('');
+    setStyle('');
+    setPropertyType('');
+    setRoomType('')
+    setProjectStatus('');
+    setSortOption('');
+    setSuggestions([]);
+    setParams({});
+    setBroaderSuggestions([]);
   }
 
   return (
@@ -51,22 +161,34 @@ export default function ExploreProjects({
       <h1>Explore Projects</h1>
 
       <form className="filter-bar" onSubmit={submit}>
-        <input
-          aria-label="Project search keywords"
-          placeholder="Search projects by keyword"
-          value={term}
-          onChange={(event) => setTerm(event.target.value)}
-        />
+        <div className="search-input-group">
+          <input
+            aria-label="Project search keywords"
+            placeholder="Search projects by keyword"
+            value={term}
+            onChange={(event) => setTerm(event.target.value)}
+            autoComplete="off"
+          />
 
-        <select
-          aria-label="Project category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          <option value="">All categories</option>
-          <option>Residential</option>
-          <option>Commercial</option>
-        </select>
+          {suggestions.length > 0 && (
+            <ul className="search-suggestions">
+              {suggestions.map((suggestion) => (
+                <li key={suggestion}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTerm(suggestion);
+                      setSuggestions([]);
+                      setParams({ q: suggestion });
+                    }}
+                  >
+                    {suggestion}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <select
           aria-label="Design style"
@@ -85,13 +207,54 @@ export default function ExploreProjects({
           onChange={(e) => setPropertyType(e.target.value)}
         >
           <option value="">All property types</option>
+          <option>HDB</option>
           <option>Apartment</option>
           <option>Condominium</option>
           <option>Office</option>
         </select>
 
+        <select
+          aria-label="Room Type"
+          value={roomType}
+          onChange={(event) => setRoomType(event.target.value)}
+        >
+          <option value="">All room types</option>
+          <option value="Living Room">Living Room</option>
+          <option value="Bedroom">Bedroom</option>
+          <option value="Kitchen">Kitchen</option>
+          <option value="Bathroom">Bathroom</option>
+        </select>
+
+        <select
+          aria-label="Project Status"
+          value={projectStatus}
+          onChange={(event) => setProjectStatus(event.target.value)}
+        >
+          <option value="">All project statuses</option>
+          <option value="ongoing">Ongoing</option>
+          <option value="completed">Completed</option>
+        </select>
+
+        <select
+          aria-label="Sort projects"
+          value={sortOption}
+          onChange={(event) => setSortOption(event.target.value)}
+        >
+          <option value="">Default sorting</option>
+          <option value="relevance">Most relevant</option>
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+        </select>
+
         <button className="pill" type="submit">
           Search ↗
+        </button>
+
+        <button
+         type="button"
+         onClick={resetSearch}
+        >
+          Reset
         </button>
       </form>
 
@@ -117,13 +280,28 @@ export default function ExploreProjects({
         )}
       </div>
 
-      <p className="muted">
-        {results.length} example projects shown.
-        Results currently use local sample data, not MongoDB.
-      </p>
+      {!loading &&
+        !searchError &&
+        (
+          query.trim() !== '' ||
+          style !== '' ||
+          propertyType !== '' ||
+          roomType !== '' ||
+          projectStatus !== ''
+        ) && (
+          <p className="muted">
+            {displayProjects.length} matching projects found.
+          </p>
+        )}
+
+      {loading && <p>Searching projects...</p>}
+
+      {searchError && (
+        <p role="alert">{searchError}</p>
+      )}
 
       <div className="project-grid">
-        {results.map((project) => (
+        {displayProjects.map((project) => (
           <ProjectCard
             key={project.id}
             project={project}
@@ -134,9 +312,30 @@ export default function ExploreProjects({
         ))}
       </div>
 
-      {results.length === 0 && (
-        <p>No matching projects found. Try removing a filter.</p>
-      )}
+      {!loading &&
+        !searchError &&
+        (
+          query.trim() !== '' ||
+          style !== '' ||
+          propertyType !== '' ||
+          roomType !== '' ||
+          projectStatus !== ''
+        ) &&
+        displayProjects.length === 0 && (
+        <div>
+          <p>No matching projects found.</p>
+
+          {broaderSuggestions.length > 0 && (
+            <ul>
+              {broaderSuggestions.map((suggestion) => (
+                <li key={suggestion}>
+                  {suggestion}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        )}
     </div>
   );
 }
