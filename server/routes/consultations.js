@@ -4,7 +4,9 @@ const { ObjectId } = require('mongodb');
 const ConsultationController = require(
   '../controllers/ConsultationController'
 );
-
+const NotificationService = require(
+  '../services/NotificationService'
+);
 const router = express.Router();
 
 function createController(req) {
@@ -27,6 +29,7 @@ function sendError(res, error) {
   if (
     message.includes('no longer available') ||
     message.includes('Scheduling conflict') ||
+    message.includes('concurrent booking') ||
     message.includes('Unable to reserve')
   ) {
     return res.status(409).json({
@@ -59,6 +62,46 @@ function sendError(res, error) {
     success: false,
     error: 'Unable to process consultation request.'
   });
+}
+
+
+async function notifyDesignerOfBooking(req, designerId, result) {
+  console.log('NOTIFICATION DEBUG:', {
+    designerId,
+    bookingResult: result
+  });
+
+  try {
+    const consultationId =
+      result?.requestId || result?.consultationId || result?._id;
+
+    if (!consultationId || !isValidId(String(consultationId))) {
+      console.error(
+        'Booking notification skipped: consultation ID unavailable.'
+      );
+      return;
+    }
+
+    const service = new NotificationService(req.app.locals.db);
+
+    const notification = await service.createNotification({
+      recipientId: designerId,
+      consultationId: String(consultationId),
+      type: 'consultation_requested',
+      title: 'New Consultation Request',
+      message:
+        'A customer has requested a consultation. Review the request in your dashboard.'
+    });
+
+    console.log(
+      'NOTIFICATION CREATED SUCCESSFULLY:',
+      notification._id.toString()
+    );
+
+  } catch (error) {
+    // Notification errors must not cause successful bookings to fail.
+    console.error('Unable to create booking notification:', error);
+  }
 }
 
 async function requireCustomer(req, res, next) {
@@ -96,6 +139,53 @@ async function requireCustomer(req, res, next) {
     next(error);
   }
 }
+
+/**
+ * GET /api/consultations/calendar
+ *
+ * Retrieve a designer's available and unavailable
+ * consultation times for a selected date.
+ *
+ * Example:
+ * /api/consultations/calendar?designerId=...&date=2026-12-10
+ */
+router.get('/calendar', async (req, res) => {
+  try {
+    const { designerId, date } = req.query;
+
+    if (!isValidId(designerId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'A valid designer ID is required.'
+      });
+    }
+
+    if (
+      typeof date !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(date)
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a date in YYYY-MM-DD format.'
+      });
+    }
+
+    const controller = createController(req);
+
+    const calendar = await controller.getCalendarSlots(
+      designerId,
+      date
+    );
+
+    return res.json({
+      success: true,
+      data: calendar
+    });
+
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
 
 // GET available slots for a designer
 router.get('/slots', async (req, res) => {
@@ -188,7 +278,68 @@ router.post('/', requireCustomer, async (req, res) => {
         slotId,
         renovationRequirements
       );
+      await notifyDesignerOfBooking(req, designerId, result);
+    return res.status(201).json({
+      success: true,
+      data: result
+    });
 
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
+/**
+ * POST /api/consultations/custom
+ * Create a consultation using a customer-selected date/time.
+ */
+router.post('/custom', requireCustomer, async (req, res) => {
+  try {
+    const {
+      designerId,
+      startTime,
+      renovationRequirements
+    } = req.body || {};
+
+    if (!isValidId(designerId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'A valid designer ID is required.'
+      });
+    }
+
+    if (
+      typeof startTime !== 'string' ||
+      !startTime.trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please select an appointment date and time.'
+      });
+    }
+
+    if (
+      typeof renovationRequirements !== 'string' ||
+      !renovationRequirements.trim() ||
+      renovationRequirements.length > 2000
+    ) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Please enter up to 2000 characters of renovation requirements.'
+      });
+    }
+
+    const controller = createController(req);
+
+    const result =
+      await controller.submitCustomConsultationRequest(
+        req.customerId,
+        designerId,
+        startTime,
+        renovationRequirements
+      );
+      await notifyDesignerOfBooking(req, designerId, result);
     return res.status(201).json({
       success: true,
       data: result
@@ -252,9 +403,10 @@ router.get('/mine', requireCustomer, async (req, res) => {
     );
 
     return res.json({
-      success: true,
-      data
-    });
+  success: true,
+  customerId: req.customerId,
+  data
+});
 
   } catch (error) {
     return sendError(res, error);
