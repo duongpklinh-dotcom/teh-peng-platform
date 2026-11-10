@@ -341,7 +341,5 @@ class SearchProjectsController {
 
     return updatedCriteria;
   }
-
 }
-
 module.exports = SearchProjectsController;
