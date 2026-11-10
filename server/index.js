@@ -17,6 +17,7 @@ const designerConsultationRoutes = require('./routes/designerConsultations');
 
 // NEW: Private messaging routes
 const consultationMessageRoutes = require('./routes/consultationMessages');
+const notificationRoutes = require('./routes/notifications');
 
 require('dotenv').config({
   path: path.join(__dirname, '.env')
@@ -73,7 +74,17 @@ async function startServer() {
       createdAt: 1,
       _id: 1
     });
+// Retrieve a user's notifications, newest first.
+await db.collection('notifications').createIndex({
+  recipientId: 1,
+  createdAt: -1
+});
 
+// Efficiently count unread notifications.
+await db.collection('notifications').createIndex({
+  recipientId: 1,
+  isRead: 1
+});
     app.locals.db = db;
     app.locals.mongoClient = client;
 
@@ -100,6 +111,8 @@ async function startServer() {
     app.use('/api/projects', projectRoutes);
     app.use('/api/auth', authRoutes);
     app.use('/api/consultations', consultationRoutes);
+    // Customer and designer in-app notifications
+app.use('/api/notifications', notificationRoutes);
 
     app.use(
       '/api/designer-availability',

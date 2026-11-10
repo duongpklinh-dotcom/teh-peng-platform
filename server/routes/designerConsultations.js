@@ -1,6 +1,7 @@
 
 const express = require('express');
 const { ObjectId } = require('mongodb');
+const NotificationService = require('../services/NotificationService');
 
 const router = express.Router();
 
@@ -327,26 +328,28 @@ async function updateConsultationStatus(
           );
 
           if (!hasOverlap) {
-  await timeSlots.updateOne(
-    {
-      _id: slotObjectId,
-      designerId: req.designerId
-    },
-    {
-      $set: {
-        isAvailable: true,
-        updatedAt: now
+            await timeSlots.updateOne(
+              {
+                _id: slotObjectId,
+                designerId: req.designerId
+              },
+              {
+                $set: {
+                  isAvailable: true,
+                  updatedAt: now
+                }
+              },
+              { session }
+            );
+          }
+        }
       }
-    },
-    { session }
-  );
-}
-      } }
 
       outcome = {
         status: 200,
         data: {
           requestId: consultation._id.toString(),
+          customerId: consultation.customerId.toString(),
           designerId: req.designerId.toString(),
           requestStatus: nextStatus,
           reviewedAt: now
@@ -366,6 +369,42 @@ async function updateConsultationStatus(
         success: false,
         error: 'Unable to update consultation.'
       });
+    }
+
+    // STEP 10D.7:
+    // Notify the customer only after the status
+    // update transaction has committed successfully.
+    try {
+      const notificationService =
+        new NotificationService(db);
+
+      await notificationService.createNotification({
+        recipientId: outcome.data.customerId,
+        consultationId: outcome.data.requestId,
+        type:
+          action === 'approve'
+            ? 'consultation_approved'
+            : 'consultation_rejected',
+        title:
+          action === 'approve'
+            ? 'Consultation Approved'
+            : 'Consultation Rejected',
+        message:
+          action === 'approve'
+            ? 'Your consultation request has been approved by the interior designer.'
+            : 'Your consultation request has been rejected by the interior designer.'
+      });
+
+      console.log(
+        'Customer consultation notification created successfully.'
+      );
+    } catch (notificationError) {
+      // Notification failures must not undo
+      // a successful approval or rejection.
+      console.error(
+        'Unable to create customer consultation notification:',
+        notificationError
+      );
     }
 
     return res.status(200).json({

@@ -1,6 +1,7 @@
 
 const express = require('express');
 const { ObjectId } = require('mongodb');
+const NotificationService = require('../services/NotificationService');
 
 const router = express.Router();
 
@@ -110,6 +111,55 @@ function formatMessage(message) {
   };
 }
 
+// STEP 10D.8:
+// Notify the other participant when a new chat message is sent.
+async function notifyNewMessage(req, consultation) {
+  try {
+    const senderId = req.messagingUser._id.toString();
+
+    const isCustomer =
+      consultation.customerId?.toString() === senderId;
+
+    const recipientId = isCustomer
+      ? consultation.designerId?.toString()
+      : consultation.customerId?.toString();
+
+    if (!recipientId || !isValidId(recipientId)) {
+      console.error(
+        'Chat notification skipped: recipient ID unavailable.'
+      );
+      return;
+    }
+
+    const notificationService = new NotificationService(
+      req.app.locals.db
+    );
+
+    const senderLabel = isCustomer
+      ? 'customer'
+      : 'interior designer';
+
+    await notificationService.createNotification({
+      recipientId,
+      consultationId: consultation._id.toString(),
+      type: 'new_consultation_message',
+      title: 'New Consultation Message',
+      message: `You have received a new message from the ${senderLabel}.`
+    });
+
+    console.log(
+      'Chat notification created successfully.'
+    );
+  } catch (error) {
+    // Notification failures must not cause
+    // successfully saved messages to fail.
+    console.error(
+      'Unable to create chat notification:',
+      error
+    );
+  }
+}
+
 // GET /api/consultation-messages/:consultationId
 // Retrieve the most recent messages for a consultation.
 router.get(
@@ -201,6 +251,11 @@ router.post(
       const result = await req.app.locals.db
         .collection('consultationMessages')
         .insertOne(message);
+
+      // STEP 10D.8:
+      // Create the notification only after
+      // the message has been saved successfully.
+      await notifyNewMessage(req, consultation);
 
       return res.status(201).json({
         success: true,

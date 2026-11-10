@@ -3,6 +3,7 @@ import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import SearchBar from './SearchBar';
 import AccountDropdown from './AccountDropdown';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar({ user, onLogout }) {
   const links = [
@@ -28,6 +29,9 @@ export default function Navbar({ user, onLogout }) {
       </nav>
 
       <SearchBar />
+
+      {user && <NotificationBell />}
+
       <AccountDropdown user={user} onLogout={onLogout} />
     </header>
   );

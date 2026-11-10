@@ -10,6 +10,7 @@ import DesignerAvailability from './DesignerAvailability';
 
 const dashboardSections = [
   {
+    id: 'availability',
     title: 'My Availability',
     description:
       'Manage your working dates and available consultation hours.',
@@ -17,6 +18,7 @@ const dashboardSections = [
     status: 'Available now'
   },
   {
+    id: 'requests',
     title: 'Consultation Requests',
     description:
       'Review customer bookings and accept or reject requests.',
@@ -24,6 +26,7 @@ const dashboardSections = [
     status: 'Available now'
   },
   {
+    id: 'messages',
     title: 'Messages',
     description:
       'Communicate privately with customers after confirming consultations.',
@@ -31,6 +34,7 @@ const dashboardSections = [
     status: 'Available now'
   },
   {
+    id: 'notifications',
     title: 'Notifications',
     description:
       'Receive updates about bookings, cancellations and messages.',
@@ -386,7 +390,7 @@ function DesignerChat({ consultationId, customerName, designerId, onClose }) {
   );
 }
 
-function ConsultationRequests({ designerId }) {
+function ConsultationRequests({ designerId, navigationTarget }) {
   const [requests, setRequests] = useState([]);
   const [activeFilter, setActiveFilter] = useState('All');
   const [loading, setLoading] = useState(true);
@@ -394,6 +398,12 @@ function ConsultationRequests({ designerId }) {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [openChatId, setOpenChatId] = useState(null);
+
+  // Dashboard cards can select the relevant request filter.
+  useEffect(() => {
+    if (!navigationTarget) return;
+    setActiveFilter(navigationTarget.section === 'messages' ? 'Confirmed' : 'All');
+  }, [navigationTarget]);
 
   const loadRequests = useCallback(async () => {
     try {
@@ -935,6 +945,24 @@ function ConsultationRequests({ designerId }) {
 }
 
 export default function DesignerConsultations({ user }) {
+  const [navigationTarget, setNavigationTarget] = useState(null);
+
+  function navigateToSection(sectionId) {
+    if (sectionId === 'notifications') return;
+
+    if (sectionId === 'messages' || sectionId === 'requests') {
+      // Use a new object so repeated clicks reset the filter too.
+      setNavigationTarget({ section: sectionId, selectedAt: Date.now() });
+    }
+
+    const targetId = sectionId === 'messages' ? 'consultation-requests' :
+      sectionId === 'requests' ? 'consultation-requests' : 'designer-availability';
+    document.getElementById(targetId)?.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start'
+    });
+  }
+
   return (
     <div
       className="page section"
@@ -969,70 +997,73 @@ export default function DesignerConsultations({ user }) {
           gap: '22px'
         }}
       >
-        {dashboardSections.map(section => (
-          <div
-            key={section.title}
-            className="panel"
-            style={{
-              padding: '30px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '14px',
-              minHeight: '250px'
-            }}
-          >
-            <span
-              style={{
-                fontSize: '34px',
-                lineHeight: 1
-              }}
-              aria-hidden="true"
-            >
-              {section.icon}
-            </span>
+        {dashboardSections.map(section => {
+          const available = section.id !== 'notifications';
+          const cardStyle = {
+            padding: '30px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+            minHeight: '250px',
+            width: '100%',
+            textAlign: 'left',
+            fontFamily: 'inherit',
+            color: 'inherit',
+            border: '1px solid #e5ded4',
+            borderRadius: '14px',
+            cursor: available ? 'pointer' : 'default',
+            opacity: available ? 1 : 0.7
+          };
+          const contents = (
+            <>
+              <span style={{ fontSize: '34px', lineHeight: 1 }} aria-hidden="true">
+                {section.icon}
+              </span>
+              <h2 style={{ margin: 0, fontSize: '24px' }}>{section.title}</h2>
+              <p className="muted" style={{ flex: 1, margin: 0 }}>
+                {section.description}
+              </p>
+              <span style={{
+                alignSelf: 'flex-start', padding: '8px 14px',
+                background: '#f4f1eb', borderRadius: '20px',
+                fontSize: '13px', color: '#69452e'
+              }}>
+                {available ? 'Open section →' : section.status}
+              </span>
+            </>
+          );
 
-            <h2
-              style={{
-                margin: 0,
-                fontSize: '24px'
-              }}
+          return available ? (
+            <button
+              key={section.id}
+              type="button"
+              className="panel"
+              onClick={() => navigateToSection(section.id)}
+              style={cardStyle}
+              aria-label={`Open ${section.title}`}
             >
-              {section.title}
-            </h2>
-
-            <p
-              className="muted"
-              style={{
-                flex: 1,
-                margin: 0
-              }}
-            >
-              {section.description}
-            </p>
-
-            <span
-              style={{
-                alignSelf: 'flex-start',
-                padding: '8px 14px',
-                background: '#f4f1eb',
-                borderRadius: '20px',
-                fontSize: '13px',
-                color: '#69452e'
-              }}
-            >
-              {section.status}
-            </span>
-          </div>
-        ))}
+              {contents}
+            </button>
+          ) : (
+            <div key={section.id} className="panel" style={cardStyle}>
+              {contents}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Existing designer calendar */}
-      <DesignerAvailability />
+      {/* Anchor for dashboard availability navigation */}
+      <div id="designer-availability" style={{ scrollMarginTop: '100px' }}>
+        <DesignerAvailability />
+      </div>
 
-      {/* NEW: Customer consultation management */}
-      <ConsultationRequests
-        designerId={user?._id || user?.id || user?.userId}
-      />
+      {/* Both Requests and Messages navigate here. Messages selects Confirmed. */}
+      <div id="consultation-requests" style={{ scrollMarginTop: '100px' }}>
+        <ConsultationRequests
+          designerId={user?._id || user?.id || user?.userId}
+          navigationTarget={navigationTarget}
+        />
+      </div>
 
       <div
         className="panel"

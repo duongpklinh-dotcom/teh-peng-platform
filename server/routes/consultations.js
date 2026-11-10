@@ -4,7 +4,9 @@ const { ObjectId } = require('mongodb');
 const ConsultationController = require(
   '../controllers/ConsultationController'
 );
-
+const NotificationService = require(
+  '../services/NotificationService'
+);
 const router = express.Router();
 
 function createController(req) {
@@ -60,6 +62,46 @@ function sendError(res, error) {
     success: false,
     error: 'Unable to process consultation request.'
   });
+}
+
+
+async function notifyDesignerOfBooking(req, designerId, result) {
+  console.log('NOTIFICATION DEBUG:', {
+    designerId,
+    bookingResult: result
+  });
+
+  try {
+    const consultationId =
+      result?.requestId || result?.consultationId || result?._id;
+
+    if (!consultationId || !isValidId(String(consultationId))) {
+      console.error(
+        'Booking notification skipped: consultation ID unavailable.'
+      );
+      return;
+    }
+
+    const service = new NotificationService(req.app.locals.db);
+
+    const notification = await service.createNotification({
+      recipientId: designerId,
+      consultationId: String(consultationId),
+      type: 'consultation_requested',
+      title: 'New Consultation Request',
+      message:
+        'A customer has requested a consultation. Review the request in your dashboard.'
+    });
+
+    console.log(
+      'NOTIFICATION CREATED SUCCESSFULLY:',
+      notification._id.toString()
+    );
+
+  } catch (error) {
+    // Notification errors must not cause successful bookings to fail.
+    console.error('Unable to create booking notification:', error);
+  }
 }
 
 async function requireCustomer(req, res, next) {
@@ -236,7 +278,7 @@ router.post('/', requireCustomer, async (req, res) => {
         slotId,
         renovationRequirements
       );
-
+      await notifyDesignerOfBooking(req, designerId, result);
     return res.status(201).json({
       success: true,
       data: result
@@ -297,7 +339,7 @@ router.post('/custom', requireCustomer, async (req, res) => {
         startTime,
         renovationRequirements
       );
-
+      await notifyDesignerOfBooking(req, designerId, result);
     return res.status(201).json({
       success: true,
       data: result
