@@ -1,3 +1,4 @@
+
 node_modules/
 dist/
 coverage/
@@ -6,9 +7,12 @@ coverage/
 !.env.example
 .DS_Store
 *.log
-# Local authentication test files
+
+# Local authentication and API testing files
 cookies.txt
 **/cookies.txt
-# Temporary authentication test files
-cookies.txt
 csrf-response.json
+**/csrf-response.json
+
+# Locally uploaded project images
+server/uploads/

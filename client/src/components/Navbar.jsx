@@ -17,8 +17,10 @@ export default function Navbar({ user, onLogout }) {
   return (
     <header className="site-header">
       <Link className="brand" to="/">
-        TEH PENG<span className="brand-dot">.</span>
+        TP Interior<span className="brand-dot">.</span>
       </Link>
+
+    
 
       <nav className="main-links" aria-label="Main website navigation">
         {links.map(([label, path]) => (
@@ -36,3 +38,5 @@ export default function Navbar({ user, onLogout }) {
     </header>
   );
 }
+
+

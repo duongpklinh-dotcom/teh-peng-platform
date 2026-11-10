@@ -1,59 +1,175 @@
-## Development Guide
-Interior design discovery and renovation matching platform. Find your feature below, open its files, and implement its TODOs according to your approved BCE/sequence diagrams.
+## Tools Required
 
-1. Find your feature
-Paths are relative to the repository root. Skeleton means the file exists but the feature is not implemented.
-Feature	Frontend — work here	Backend — work here	Status
-Add New Project (US05)	client/src/pages/designer/AddProject.jsx (create if absent)	server/controllers/AddProjectController.js, server/models/Project.js	Basic backend working; UI/full rules pending
-Edit Project Details (US04)	client/src/pages/designer/EditProject.jsx	server/controllers/EditProjectController.js	Skeleton
-Search Projects	client/src/pages/public/ExploreProjects.jsx	server/controllers/SearchProjectsController.js, server/models/SearchCriteria.js, server/models/SearchResult.js	Frontend demo + backend skeleton
-View Project Details	client/src/pages/public/ProjectDetails.jsx	server/controllers/ViewProjectDetailsController.js	Frontend demo + backend skeleton
-Compare Projects	client/src/pages/customer/CompareProjects.jsx	server/controllers/ComparisonController.js, server/routes/comparisons.js	Skeleton
-Book Consultation	client/src/pages/customer/BookConsultation.jsx	server/controllers/ConsultationController.js, server/models/TimeSlot.js, server/models/ConsultationRequest.js	Frontend demo + backend skeleton
-Create IDP Category	client/src/pages/management/Categories.jsx (check/create)	server/controllers/CategoryController.js (check/create)	To confirm / implement
-Generate Weekly Report	client/src/pages/management/WeeklyReports.jsx (check/create)	server/controllers/ReportController.js (check/create)	To confirm / implement
-View Login History	client/src/pages/admin/LoginHistory.jsx (check/create)	Admin controller to agree with feature owner	To confirm / implement
-Unlock User Account	client/src/pages/admin/UserAccounts.jsx (check/create)	Admin controller to agree with feature owner	To confirm / implement
+Install these before starting:
 
+- Visual Studio Code
+- Git
+- Node.js 24.16.0, which includes npm
+- A GitHub account with access to this repository
 
-Only the files explicitly confirmed in our scaffolding work are guaranteed to exist. Entries marked check/create are proposed locations; don't assume they have been committed.
+## Clone the Project Using VS Code
 
-2. Shared files — coordinate changes
-File	Purpose
-server/models/Project.js	One shared Project entity for Add/Edit/Search/View/Compare
-server/models/User.js	Existing roles and user accounts; no duplicate Customer/Designer models
-server/routes/projects.js	Existing project API routes; coordinate additional GET/PATCH handlers
-client/src/App.jsx	App routes, authentication and shared state
-client/src/components/ProjectCard.jsx	Shared project card; Compare callback is a hook, not implemented logic
-client/src/data/demo.js	Temporary example projects, not MongoDB records
-client/src/styles/theme.css	Shared Figma-derived styling
-server/index.js	Express wiring and database connection
+1. Accept the GitHub repository invitation.
+2. Open VS Code.
+3. Open the Command Palette:
+   - Mac: Command + Shift + P
+   - Windows: Ctrl + Shift + P
+4. Search for `Git: Clone`.
+5. Paste this repository URL:
 
+   https://github.com/duongpklinh-dotcom/teh-peng-platform.git
 
-Rule: Keep UML names in your feature classes exactly as approved; map them to existing shared MongoDB fields rather than creating duplicate Project/User collections. See [`docs/shared-data-and-api.md`](docs/shared-data-and-api.md).
+6. Choose a folder on your computer to save the project.
+7. Sign in to GitHub if prompted.
+8. Click Open when cloning finishes.
+9. Trust the project folder if prompted.
 
-3. Run locally
-Prerequisites: Node.js/npm, access to the team's MongoDB Atlas database, and a local server/.env configured using the team's approved setup. Never commit .env or passwords.
-# Terminal 1 — backend
+To reopen the project later:
+File → Open Folder → select `teh-peng-platform`.
+
+Always open the whole project folder.
+
+## Project Folders
+
+- `client` — React frontend.
+- `server` — Express backend.
+- `.gitignore` — excludes private settings and generated files from Git.
+- `README.md` — team setup instructions.
+
+## First-Time Setup
+
+Open Terminal → New Terminal in VS Code.
+
+The terminal should start in the main `teh-peng-platform` folder.
+
+### Frontend
+
+Run these commands one at a time:
+
+```bash
+cd client
+npm ci
+npm run dev
+```
+
+Open the address printed in the terminal, usually:
+
+http://localhost:5173
+
+Leave this terminal running.
+
+### Backend
+
+Open Terminal → New Terminal again.
+
+Make sure this second terminal starts in `teh-peng-platform`.
+If it starts inside `client`, run `cd ..` first.
+
+Run:
+
+```bash
 cd server
-npm install
+npm ci
 node index.js
+```
 
-# Terminal 2 — frontend (from repository root)
+Expected output:
+
+```text
+Backend running at http://localhost:3001
+```
+
+Leave this terminal running too.
+
+## Check That Everything Works
+
+1. Open the frontend at http://localhost:5173.
+2. Click Check backend.
+3. Confirm that this message appears:
+
+```text
+Backend is running
+```
+
+You can also check the backend directly:
+
+http://localhost:3001/api/health
+
+These localhost addresses run on your own computer.
+They are not shared, deployed website links.
+
+## Starting the Project Next Time
+
+Open the project folder in VS Code.
+
+In a terminal starting from the main project folder:
+
+```bash
 cd client
 npm install
 npm run dev
-Backend: http://localhost:3001 · Frontend: Vite's displayed local URL (usually http://localhost:5173). The frontend uses /api proxying to the backend.
-# From repository root: existing backend tests
-node --test server/tests/*.test.js
+```
 
-# Frontend build
-cd client && npm run build
-4. How to work on your feature
+In a second terminal starting from the main project folder:
 
-1. Open your feature's frontend + controller + models from the table.
-2. Read its TODO comments and your approved BCE class and sequence diagrams. Skeleton methods intentionally throw Not implemented.
-3. Reuse Project, User, the existing session/auth middleware, and the shared MongoDB connection.
-4. Implement your feature and tests on your own branch. Coordinate edits to shared files before merging.
-5. Update the API/status section in [`docs/shared-data-and-api.md`](docs/shared-data-and-api.md) when a route actually works.
-Status reminder: A created file or passing existing tests does not mean that its feature, routes, or new tests are complete.
+```bash
+cd server
+node index.js
+```
+
+You do not need to run `npm ci` every time.
+Run it in the relevant folder after pulling changes to its
+package.json or package-lock.json.
+
+To stop either server, click its terminal and press Control + C.
+
+## Team GitHub Workflow Using VS Code
+
+### Start a New Feature
+
+Start with your previous work committed.
+
+1. Click the branch name at the bottom-left of VS Code.
+2. Select `main`.
+3. Open the Command Palette and select Git: Pull.
+4. Open the Command Palette and select Git: Create Branch.
+5. Enter a descriptive branch name, for example:
+   `feature/edit-project-details`
+
+Work on your feature branch.
+
+### Save Your Work to GitHub
+
+1. Save your edited files.
+2. Open Source Control in the left sidebar.
+3. Review your changed files.
+4. Click the + beside the files you want to include.
+5. Enter a clear commit message.
+6. Click Commit.
+7. Click Publish Branch for a new branch, or use Git: Push
+   for an existing published branch.
+
+Saving a file, committing and pushing are separate actions:
+- Save updates the file on your computer.
+- Commit records a version locally.
+- Push uploads your commits to GitHub.
+
+### Request a Review
+
+1. Open the repository on GitHub.
+2. Open Pull requests → New pull request.
+3. Set the base branch to `main`.
+4. Select your feature branch as the compare branch.
+5. Describe your changes and how you tested them.
+6. Create the pull request.
+7. Ask a teammate to review it before merging.
+
+## Team Rules
+
+- Use a separate branch for each feature.
+- Coordinate before changing shared files or data structures.
+- Keep both package-lock.json files in Git.
+- Never upload passwords, tokens or .env files.
+- Do not upload node_modules.
+- Record relevant work and progress in Taiga.
+- Keep implementation consistent with the agreed design.

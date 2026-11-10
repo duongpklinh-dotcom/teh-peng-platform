@@ -4,7 +4,7 @@ constructor({
   designerId,
   title,
   description,
-  categoryId,
+  category,
   style,
   propertyType,
   roomType,
@@ -18,7 +18,7 @@ constructor({
     this.designerId = designerId;
     this.title = title;
     this.description = description;
-    this.categoryId = categoryId;
+    this.category = category;
     this.style = style;
     this.propertyType = propertyType;
     this.roomType = roomType;
@@ -39,10 +39,6 @@ constructor({
       throw new Error('Designer and project title are required');
     }
 
-    if (this.numRooms !== null &&
-        (!Number.isInteger(this.numRooms) || this.numRooms <= 0)) {
-      throw new Error('Number of rooms must be a positive integer');
-    }
 
     if (this.areaSqm !== null &&
         (typeof this.areaSqm !== 'number' ||
@@ -51,12 +47,23 @@ constructor({
       throw new Error('Area must be a positive number');
     }
 
+    if (
+    this.category &&
+    !['Residential', 'Commercial'].includes(this.category)
+  ) {
+    throw new Error('Category must be Residential or Commercial');
+  }
+
     if (this.estimatedBudget !== null &&
         (typeof this.estimatedBudget !== 'number' ||
         !Number.isFinite(this.estimatedBudget) ||
         this.estimatedBudget < 0)) {
       throw new Error('Estimated budget must be a non-negative number');
     }
+
+    if (!['ongoing', 'completed'].includes(this.projectStatus)) {
+      throw new Error('Invalid project status');
+}
 
   }
 }

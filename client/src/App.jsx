@@ -36,6 +36,7 @@ import WeeklyReports from './pages/management/WeeklyReports';
 
 import UserAccounts from './pages/admin/UserAccounts';
 import LoginHistory from './pages/admin/LoginHistory';
+import AddProject from './pages/designer/AddProject';
 
 async function getCsrfToken() {
   const response = await fetch('/api/auth/csrf-token', {
@@ -237,10 +238,15 @@ export default function App() {
               path="/designer/projects"
               element={<MyProjects />}
             />
+                
+            <Route
+                path="/designer/projects/new"
+                element={<AddProject user={user} />}
+              />
 
             <Route
               path="/designer/projects/:id/edit"
-              element={<EditProject />}
+              element={<EditProject user={user} />}
             />
 
             <Route
