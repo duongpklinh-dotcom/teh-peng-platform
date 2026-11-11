@@ -4,7 +4,7 @@ const { MongoClient } = require('mongodb');
 const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo').default;
-
+const adminRoutes = require('./routes/admin');
 const {
   csrfSynchronisedProtection
 } = require('./middleware/csrf');
@@ -18,6 +18,7 @@ const designerConsultationRoutes = require('./routes/designerConsultations');
 // NEW: Private messaging routes
 const consultationMessageRoutes = require('./routes/consultationMessages');
 const notificationRoutes = require('./routes/notifications');
+
 
 require('dotenv').config({
   path: path.join(__dirname, '.env')
@@ -116,6 +117,7 @@ await db.collection('notifications').createIndex({
 
     app.use('/api/projects', projectRoutes);
     app.use('/api/auth', authRoutes);
+    app.use('/api/admin', adminRoutes);
     app.use('/api/consultations', consultationRoutes);
     // Customer and designer in-app notifications
 app.use('/api/notifications', notificationRoutes);

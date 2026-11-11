@@ -73,7 +73,10 @@ async login({ email, password }) {
     throw new Error('Invalid email or password');
   }
 
-  if (user.accountStatus !== 'active') {
+  if (
+    user.accountStatus !== 'active' &&
+    user.accountStatus !== 'suspended'
+  ) {
     throw new Error('Account is not active');
   }
 
@@ -81,6 +84,15 @@ async login({ email, password }) {
     password,
     user.passwordHash
   );
+
+  // UA04: only reveal the suspension to someone who knows the password
+  if (user.accountStatus === 'suspended') {
+    throw new Error(
+      passwordMatches
+        ? 'Your account is suspended'
+        : 'Invalid email or password'
+    );
+  }
 
   
 
