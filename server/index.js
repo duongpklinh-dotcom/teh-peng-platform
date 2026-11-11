@@ -13,13 +13,33 @@ const projectRoutes = require('./routes/projects');
 const authRoutes = require('./routes/auth');
 const consultationRoutes = require('./routes/consultations');
 const adminRoutes = require('./routes/admin');
+const designerAvailabilityRoutes = require('./routes/designerAvailability');
+const designerConsultationRoutes = require('./routes/designerConsultations');
+
+// NEW: Private messaging routes
+const consultationMessageRoutes = require('./routes/consultationMessages');
+const notificationRoutes = require('./routes/notifications');
 
 require('dotenv').config({
-  path: path.join(__dirname, '.env'),
+  path: path.join(__dirname, '.env')
 });
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
+
+// Allow requests from the local React frontend
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+
+  next ();
+});
 
 app.use(express.json());
 
@@ -50,7 +70,7 @@ async function startServer() {
     }
 
     client = new MongoClient(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 10000
     });
 
     await client.connect();
@@ -64,6 +84,28 @@ async function startServer() {
       { unique: true }
     );
 
+    await db.collection('designerAvailability').createIndex(
+      { designerId: 1 },
+      { unique: true }
+    );
+
+    // NEW: Retrieve messages by consultation and creation time
+    await db.collection('consultationMessages').createIndex({
+      consultationId: 1,
+      createdAt: 1,
+      _id: 1
+    });
+// Retrieve a user's notifications, newest first.
+await db.collection('notifications').createIndex({
+  recipientId: 1,
+  createdAt: -1
+});
+
+// Efficiently count unread notifications.
+await db.collection('notifications').createIndex({
+  recipientId: 1,
+  isRead: 1
+});
     app.locals.db = db;
     app.locals.mongoClient = client;
 
@@ -87,15 +129,28 @@ async function startServer() {
 
     app.use(csrfSynchronisedProtection);
 
-    // Register application routes
     app.use('/api/projects', projectRoutes);
     app.use('/api/auth', authRoutes);
     app.use('/api/consultations', consultationRoutes);
+    // Customer and designer in-app notifications
+app.use('/api/notifications', notificationRoutes);
 
-    // Register user administration routes (US13 and US14)
-    app.use('/api/admin', adminRoutes);
+    app.use(
+      '/api/designer-availability',
+      designerAvailabilityRoutes
+    );
 
-    // CSRF error handling
+    app.use(
+      '/api/designer-consultations',
+      designerConsultationRoutes
+    );
+
+    // NEW: Customer-designer private messaging API
+    app.use(
+      '/api/consultation-messages',
+      consultationMessageRoutes
+    );
+
     app.use((err, req, res, next) => {
       if (err.code === 'EBADCSRFTOKEN') {
         return res.status(403).json({
@@ -108,7 +163,6 @@ async function startServer() {
     });
 
     console.log('MongoDB connected successfully');
-    console.log('Admin routes mounted at /api/admin');
 
     app.listen(PORT, () => {
       console.log(

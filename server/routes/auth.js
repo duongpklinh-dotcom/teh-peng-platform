@@ -61,7 +61,7 @@ router.post('/register', async (req, res) => {
 router.post('/login', loginLimiter, async (req, res) => {
   try {
     const controller = new AuthController(req.app.locals.db);
-    const user = await controller.login(req.body, req);
+    const user = await controller.login(req.body);
     await new Promise((resolve, reject) => {
     req.session.regenerate((error) => {
         if (error) reject(error);
@@ -86,9 +86,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   } catch (error) {
     const status = error.message === 'Account is not active'
       ? 403
-      : error.message.toLowerCase().includes('locked')
-        ? 423
-        : 401;
+      : 401;
 
     res.status(status).json({
       success: false,
@@ -122,7 +120,7 @@ router.get('/me', async (req, res) => {
       _id: new ObjectId(req.session.userId)
     });
 
-    if (!user || (user.accountStatus && user.accountStatus !== 'active')) {
+    if (!user || user.accountStatus !== 'active') {
       return res.status(401).json({
         success: false,
         error: 'Account unavailable'

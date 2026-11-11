@@ -15,7 +15,7 @@ async function requireAuth(req, res, next) {
       _id: new ObjectId(userId)
     });
 
-    if (!user || (user.accountStatus && user.accountStatus !== 'active')) {
+    if (!user || user.accountStatus !== 'active') {
       return res.status(401).json({
         success: false,
         error: 'Account unavailable'

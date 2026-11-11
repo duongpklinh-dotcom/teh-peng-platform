@@ -1,0 +1,35 @@
+
+name: Backend Automated Tests
+
+on:
+  push:
+    branches:
+      - main
+      - alisha-1
+  pull_request:
+
+jobs:
+  backend-tests:
+    name: Run Backend Unit Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run all backend tests
+        run: npm run test:all
