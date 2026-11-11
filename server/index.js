@@ -12,16 +12,13 @@ const {
 const projectRoutes = require('./routes/projects');
 const authRoutes = require('./routes/auth');
 const consultationRoutes = require('./routes/consultations');
-<<<<<<< HEAD
 const adminRoutes = require('./routes/admin');
-=======
 const designerAvailabilityRoutes = require('./routes/designerAvailability');
 const designerConsultationRoutes = require('./routes/designerConsultations');
 
 // NEW: Private messaging routes
 const consultationMessageRoutes = require('./routes/consultationMessages');
 const notificationRoutes = require('./routes/notifications');
->>>>>>> 8efbdcf11e298311dc4acd756481fed9de85d1a7
 
 require('dotenv').config({
   path: path.join(__dirname, '.env')

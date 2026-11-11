@@ -29,8 +29,6 @@ const menu = {
 
   user_admin: [
     ['User Accounts', '/admin/accounts'],
-    ['Create Account', '/admin/accounts/new'],
-    ['Manage Accounts', '/admin/accounts/manage'],
     ['Login History', '/admin/login-history']
   ]
 };

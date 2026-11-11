@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Workspace from '../../components/Workspace';
 import { PROFILE_LABELS, statusLabel, getCsrfToken } from './accountOptions';
+import AccountsNav from './AccountsNav';
 import '../../styles/admin.css';
 
 export default function ManageAccounts({ user }) {
@@ -175,7 +176,9 @@ export default function ManageAccounts({ user }) {
   const suspending = pending?.newStatus === 'suspended';
 
   return (
-    <Workspace label="User administration" title="Manage Accounts">
+    <Workspace label="User administration" title="User Accounts">
+      <AccountsNav />
+
       {!isAdmin ? (
         <div className="panel">
           <p>Please log in as a user administrator to manage accounts.</p>
@@ -186,15 +189,9 @@ export default function ManageAccounts({ user }) {
         </div>
       ) : (
         <>
-          <div className="section-heading">
-            <p className="muted">
-              Suspend an account to block misuse without deleting any data.
-            </p>
-
-            <Link className="pill" to="/admin/accounts/new">
-              + Create Account
-            </Link>
-          </div>
+          <p className="muted">
+            Suspend an account to block misuse without deleting any data.
+          </p>
 
           {toast && (
             <div className="admin-toast" role="status" aria-live="polite">

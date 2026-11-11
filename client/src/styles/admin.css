@@ -98,6 +98,34 @@
   outline-offset: 3px;
 }
 
+/* Tabs at the top of the User Accounts area */
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 24px;
+}
+
+.admin-tab {
+  padding: 10px 20px;
+  border: 1px solid #542b0f;
+  border-radius: 50px;
+  color: #542b0f;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.admin-tab:hover {
+  background: #e9e2d7;
+}
+
+.admin-tab.is-active {
+  background: #542b0f;
+  color: #ffffff;
+}
+
 /* Success message */
 .admin-toast {
   display: flex;

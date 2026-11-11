@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Workspace from '../../components/Workspace';
 import { PROFILES, getCsrfToken } from './accountOptions';
+import AccountsNav from './AccountsNav';
 import '../../styles/admin.css';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -115,7 +116,9 @@ export default function CreateAccount({ user }) {
 
   return (
     <div className="add-project-page">
-      <Workspace label="User administration" title="Create User Account">
+      <Workspace label="User administration" title="User Accounts">
+        <AccountsNav />
+
         {user?.role !== 'user_admin' ? (
           <div className="panel add-project-form">
             <p>Please log in as a user administrator to create accounts.</p>
