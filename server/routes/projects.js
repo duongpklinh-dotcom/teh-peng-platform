@@ -71,9 +71,7 @@ router.get('/search', async (req, res) => {
     return res.status(200).json({
       success: true,
       data: results,
-      suggestions: results.length === 0
-        ? controller.suggestBroaderCriteria(criteria)
-        : []
+      suggestions: []
     });
   } catch (error) {
     console.error('Project search failed:', error);
