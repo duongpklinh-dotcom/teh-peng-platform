@@ -9,8 +9,8 @@ export const projects = [
     style: 'Modern',
     propertyType: 'Apartment',
     category: 'Residential',
-    designer: 'Shaw Sim',
-    designerId: '6af1ebf4fc0d7b52d80b6ff2',
+    designer: 'Test Designer',
+    designerId: '6adfdb222ce3e5f09a648b5f',
     company: 'Studio One',
     image: '/assets/caa8b.webp',
     description:

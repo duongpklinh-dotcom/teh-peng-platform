@@ -7,26 +7,21 @@ const menu = {
     ['Login', '/login'],
     ['Register', '/register']
   ],
-
   customer: [
     ['My Account', '/account'],
     ['My Favourites', '/account/favourites'],
     ['My Consultations', '/account/consultations'],
     ['Profile Settings', '/account/profile']
   ],
-
   interior_designer: [
-    ['Consultation Management', '/designer/consultations'],
     ['My Projects', '/designer/projects'],
     ['Featured Projects', '/designer/featured'],
     ['Profile Settings', '/account/profile']
   ],
-
   platform_management: [
     ['Manage IDP Categories', '/management/categories'],
     ['Weekly Reports', '/management/reports']
   ],
-
   user_admin: [
     ['User Accounts', '/admin/accounts'],
     ['Login History', '/admin/login-history']
@@ -44,7 +39,6 @@ export default function AccountDropdown({ user, onLogout }) {
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState('');
-
   const navigate = useNavigate();
 
   const role = user?.role || 'guest';
@@ -105,11 +99,7 @@ export default function AccountDropdown({ user, onLogout }) {
             </button>
           )}
 
-          {error && (
-            <small role="alert">
-              {error}
-            </small>
-          )}
+          {error && <small role="alert">{error}</small>}
         </div>
       )}
     </div>
