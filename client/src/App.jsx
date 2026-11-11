@@ -280,15 +280,22 @@ export default function App() {
               element={<WeeklyReports />}
             />
 
-            {/* Admin routes */}
-            <Route
+           <Route
               path="/admin/accounts"
-              element={<UserAccounts />}
+              element={
+                user?.role === 'user_admin'
+                  ? <UserAccounts />
+                  : <Navigate to="/" replace />
+              }
             />
 
             <Route
               path="/admin/login-history"
-              element={<LoginHistory />}
+              element={
+                user?.role === 'user_admin'
+                  ? <LoginHistory />
+                  : <Navigate to="/" replace />
+              }
             />
 
             {/* Fallback */}
