@@ -23,6 +23,8 @@ import Categories from './pages/management/Categories';
 import WeeklyReports from './pages/management/WeeklyReports';
 import UserAccounts from './pages/admin/UserAccounts';
 import LoginHistory from './pages/admin/LoginHistory';
+import CreateAccount from './pages/admin/CreateAccount';
+import ManageAccounts from './pages/admin/ManageAccounts';
 import AddProject from './pages/designer/AddProject';
 
 async function getCsrfToken() {
@@ -140,6 +142,8 @@ export default function App() {
             <Route path="/management/reports" element={<WeeklyReports />} />
 
             <Route path="/admin/accounts" element={<UserAccounts />} />
+            <Route path="/admin/accounts/new" element={<CreateAccount user={user} />} />
+            <Route path="/admin/accounts/manage" element={<ManageAccounts user={user} />} />
             <Route path="/admin/login-history" element={<LoginHistory />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />

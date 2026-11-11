@@ -12,6 +12,7 @@ const {
 const projectRoutes = require('./routes/projects');
 const authRoutes = require('./routes/auth');
 const consultationRoutes = require('./routes/consultations');
+const adminRoutes = require('./routes/admin');
 
 require('dotenv').config({
   path: path.join(__dirname, '.env'),
@@ -89,6 +90,7 @@ async function startServer() {
     app.use('/api/projects', projectRoutes);
     app.use('/api/auth', authRoutes);
     app.use('/api/consultations', consultationRoutes);
+    app.use('/api/admin', adminRoutes);
 
     app.use((err, req, res, next) => {
       if (err.code === 'EBADCSRFTOKEN') {
