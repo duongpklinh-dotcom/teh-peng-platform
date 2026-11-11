@@ -12,6 +12,7 @@ const {
 const projectRoutes = require('./routes/projects');
 const authRoutes = require('./routes/auth');
 const consultationRoutes = require('./routes/consultations');
+const adminRoutes = require('./routes/admin');
 const designerAvailabilityRoutes = require('./routes/designerAvailability');
 const designerConsultationRoutes = require('./routes/designerConsultations');
 
@@ -130,11 +131,25 @@ await db.collection('notifications').createIndex({
 
     app.use('/api/projects', projectRoutes);
     app.use('/api/auth', authRoutes);
+    app.use('/api/consultations', consultationRoutes);
+    // Customer and designer in-app notifications
+app.use('/api/notifications', notificationRoutes);
 
-    // Register API routes AFTER session middleware
-    app.use('/api/projects', projectRoutes);
-    app.use('/api/auth', authRoutes);
+    app.use(
+      '/api/designer-availability',
+      designerAvailabilityRoutes
+    );
 
+    app.use(
+      '/api/designer-consultations',
+      designerConsultationRoutes
+    );
+
+    // NEW: Customer-designer private messaging API
+    app.use(
+      '/api/consultation-messages',
+      consultationMessageRoutes
+    );
 
     app.use((err, req, res, next) => {
       if (err.code === 'EBADCSRFTOKEN') {
