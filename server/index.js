@@ -12,7 +12,6 @@ const {
 const projectRoutes = require('./routes/projects');
 const authRoutes = require('./routes/auth');
 const consultationRoutes = require('./routes/consultations');
-const adminRoutes = require('./routes/admin');
 const designerAvailabilityRoutes = require('./routes/designerAvailability');
 const designerConsultationRoutes = require('./routes/designerConsultations');
 
@@ -26,20 +25,6 @@ require('dotenv').config({
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
-
-// Allow requests from the local React frontend
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
-  }
-
-  next ();
-});
 
 app.use(express.json());
 
