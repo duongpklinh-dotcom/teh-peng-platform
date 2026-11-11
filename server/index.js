@@ -26,6 +26,20 @@ require('dotenv').config({
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 
+// Allow requests from the local React frontend
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+
+  next ();
+});
+
 app.use(express.json());
 
 // Serve uploaded project images
@@ -116,25 +130,11 @@ await db.collection('notifications').createIndex({
 
     app.use('/api/projects', projectRoutes);
     app.use('/api/auth', authRoutes);
-    app.use('/api/consultations', consultationRoutes);
-    // Customer and designer in-app notifications
-app.use('/api/notifications', notificationRoutes);
 
-    app.use(
-      '/api/designer-availability',
-      designerAvailabilityRoutes
-    );
+    // Register API routes AFTER session middleware
+    app.use('/api/projects', projectRoutes);
+    app.use('/api/auth', authRoutes);
 
-    app.use(
-      '/api/designer-consultations',
-      designerConsultationRoutes
-    );
-
-    // NEW: Customer-designer private messaging API
-    app.use(
-      '/api/consultation-messages',
-      consultationMessageRoutes
-    );
 
     app.use((err, req, res, next) => {
       if (err.code === 'EBADCSRFTOKEN') {
