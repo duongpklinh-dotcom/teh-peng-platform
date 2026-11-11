@@ -12,10 +12,19 @@ const {
 const projectRoutes = require('./routes/projects');
 const authRoutes = require('./routes/auth');
 const consultationRoutes = require('./routes/consultations');
+<<<<<<< HEAD
 const adminRoutes = require('./routes/admin');
+=======
+const designerAvailabilityRoutes = require('./routes/designerAvailability');
+const designerConsultationRoutes = require('./routes/designerConsultations');
+
+// NEW: Private messaging routes
+const consultationMessageRoutes = require('./routes/consultationMessages');
+const notificationRoutes = require('./routes/notifications');
+>>>>>>> 8efbdcf11e298311dc4acd756481fed9de85d1a7
 
 require('dotenv').config({
-  path: path.join(__dirname, '.env'),
+  path: path.join(__dirname, '.env')
 });
 
 const app = express();
@@ -50,7 +59,7 @@ async function startServer() {
     }
 
     client = new MongoClient(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 10000
     });
 
     await client.connect();
@@ -64,6 +73,28 @@ async function startServer() {
       { unique: true }
     );
 
+    await db.collection('designerAvailability').createIndex(
+      { designerId: 1 },
+      { unique: true }
+    );
+
+    // NEW: Retrieve messages by consultation and creation time
+    await db.collection('consultationMessages').createIndex({
+      consultationId: 1,
+      createdAt: 1,
+      _id: 1
+    });
+// Retrieve a user's notifications, newest first.
+await db.collection('notifications').createIndex({
+  recipientId: 1,
+  createdAt: -1
+});
+
+// Efficiently count unread notifications.
+await db.collection('notifications').createIndex({
+  recipientId: 1,
+  isRead: 1
+});
     app.locals.db = db;
     app.locals.mongoClient = client;
 
@@ -91,6 +122,24 @@ async function startServer() {
     app.use('/api/auth', authRoutes);
     app.use('/api/consultations', consultationRoutes);
     app.use('/api/admin', adminRoutes);
+    // Customer and designer in-app notifications
+app.use('/api/notifications', notificationRoutes);
+
+    app.use(
+      '/api/designer-availability',
+      designerAvailabilityRoutes
+    );
+
+    app.use(
+      '/api/designer-consultations',
+      designerConsultationRoutes
+    );
+
+    // NEW: Customer-designer private messaging API
+    app.use(
+      '/api/consultation-messages',
+      consultationMessageRoutes
+    );
 
     app.use((err, req, res, next) => {
       if (err.code === 'EBADCSRFTOKEN') {
