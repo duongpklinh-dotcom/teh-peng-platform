@@ -5,6 +5,19 @@ const { rateLimit } = require('express-rate-limit');
 
 const router = express.Router();
 
+async function recordLogin(req, status, user = null) {
+  try {
+    await req.app.locals.db.collection('loginHistory').insertOne({
+      userId: user?.id || null,
+      email: String(req.body?.email || '').trim().toLowerCase(),
+      status,
+      createdAt: new Date()
+    });
+  } catch (error) {
+    console.error('Unable to record login history:', error);
+  }
+}
+
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -78,12 +91,13 @@ router.post('/login', loginLimiter, async (req, res) => {
         else resolve();
     });
     });
-
+    await recordLogin(req, 'success', user);
     res.json({
       success: true,
       data: user
     });
   } catch (error) {
+    await recordLogin(req, 'failed');
     const status = error.message === 'Account is not active'
       ? 403
       : 401;
@@ -175,5 +189,28 @@ router.post('/logout', (req, res) => {
   });
 });
 
+// UA: View account login history
+router.get('/login-history', requireAdmin, async (req, res) => {
+  try {
+    const history = await req.app.locals.db
+      .collection('loginHistory')
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .toArray();
+
+    res.json({
+      success: true,
+      data: history.map(record => ({
+        id: record._id.toString(),
+        email: record.email,
+        status: record.status,
+        createdAt: record.createdAt
+      }))
+    });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
 
 module.exports = router;
