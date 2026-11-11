@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 export default function ProjectCard({
   project,
@@ -8,29 +8,59 @@ export default function ProjectCard({
   onCompare,
   isCompared = false
 }) {
+  const location = useLocation();
+
+  const detailsPath = `/projects/${project.id}`;
+
+  const returnTo =
+    location.state?.from ||
+    `${location.pathname}${location.search}`;
+
+  const linkState = {
+    from: returnTo
+  };
+
   return (
     <article className="project-card">
-      <Link to={'/projects/' + project.id}>
-        <img src={project.image} alt={project.title} />
+      <Link to={detailsPath} state={linkState}>
+        {project.image ? (
+          <img src={project.image} alt={project.title} />
+        ) : (
+          <div
+            style={{
+              minHeight: '180px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              background: '#f3eee9',
+              color: '#6b4228'
+            }}
+          >
+            No image available
+          </div>
+        )}
       </Link>
 
       <div className="project-card-copy">
         <span className="eyebrow">
-          {project.category} · {project.style}
+          {[project.category, project.style]
+            .filter(Boolean)
+            .join(' · ')}
         </span>
 
         <h3>
-          <Link to={'/projects/' + project.id}>
+          <Link to={detailsPath} state={linkState}>
             {project.title}
           </Link>
         </h3>
 
-        <p>By {project.designer}</p>
+        <p>By {project.designer || 'Designer unavailable'}</p>
 
         <div className="card-actions">
           <Link
             className="text-link"
-            to={'/projects/' + project.id}
+            to={detailsPath}
+            state={linkState}
           >
             View details ↗
           </Link>
@@ -47,7 +77,11 @@ export default function ProjectCard({
           {onCompare && (
             <button
               type="button"
-              className={isCompared ? 'compare-button selected' : 'compare-button'}
+              className={
+                isCompared
+                  ? 'compare-button selected'
+                  : 'compare-button'
+              }
               onClick={() => onCompare(project.id)}
               aria-pressed={isCompared}
             >

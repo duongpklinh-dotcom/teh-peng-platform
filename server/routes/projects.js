@@ -3,6 +3,8 @@ const { ObjectId } = require('mongodb');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const AddProjectController = require('../controllers/AddProjectController');
 const EditProjectController = require('../controllers/EditProjectController');
+const SearchProjectsController = require('../controllers/SearchProjectsController');
+const ViewProjectDetailsController = require('../controllers/ViewProjectDetailsController');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -11,6 +13,134 @@ const { randomUUID } = require('crypto');
 
 const router = express.Router();
 
+
+/* CUSTOMER — SEARCH AUTOCOMPLETE */
+router.get('/search/suggestions', async (req, res) => {
+  try {
+    const controller = new SearchProjectsController(req.app.locals.db);
+    const keyword = req.query.keyword;
+
+    if (typeof keyword !== 'string' || !keyword.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a valid keyword.'
+      });
+    }
+
+    const suggestions =
+      await controller.getAutocompleteSuggestions(keyword);
+
+    return res.status(200).json({
+      success: true,
+      data: suggestions
+    });
+  } catch (error) {
+    console.error('Autocomplete suggestions failed:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Unable to retrieve search suggestions.'
+    });
+  }
+});
+
+/* CUSTOMER — SEARCH PROJECTS */
+router.get('/search', async (req, res) => {
+  try {
+    const controller = new SearchProjectsController(req.app.locals.db);
+
+    const criteria = {
+      keyword: req.query.keyword ?? '',
+      selectedStyles: req.query.selectedStyles
+        ? String(req.query.selectedStyles).split(',')
+        : [],
+      propertyType: req.query.propertyType ?? '',
+      roomType: req.query.roomType ?? '',
+      projectStatus: req.query.projectStatus ?? '',
+      sortOption: req.query.sortOption ?? ''
+    };
+
+    if (!controller.validateSearchCriteria(criteria)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a valid keyword or at least one filter.'
+      });
+    }
+
+    const results = await controller.searchProjects(criteria);
+
+    return res.status(200).json({
+      success: true,
+      data: results,
+      suggestions: results.length === 0
+        ? controller.suggestBroaderCriteria(criteria)
+        : []
+    });
+  } catch (error) {
+    console.error('Project search failed:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Unable to search projects.'
+    });
+  }
+});
+
+
+/* CUSTOMER — VIEW PUBLISHED PROJECTS */
+router.get('/public', async (req, res) => {
+  try {
+    const controller = new ViewProjectDetailsController(
+      req.app.locals.db
+    );
+
+    const projects = await controller.getPublishedProjects();
+
+    return res.status(200).json({
+      success: true,
+      data: projects
+    });
+
+  } catch (error) {
+    console.error('Published projects retrieval failed:', error);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Unable to retrieve published projects.'
+    });
+  }
+});
+
+/* CUSTOMER — VIEW DESIGNER PORTFOLIO */
+router.get('/designers/:designerId', async (req, res) => {
+  try {
+    const controller = new ViewProjectDetailsController(
+      req.app.locals.db
+    );
+
+    const portfolio = await controller.getDesignerPortfolio(
+      req.params.designerId
+    );
+
+    if (!portfolio) {
+      return res.status(404).json({
+        success: false,
+        error: 'Designer portfolio unavailable.'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: portfolio
+    });
+
+  } catch (error) {
+    console.error('Designer portfolio retrieval failed:', error);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Unable to retrieve designer portfolio.'
+    });
+  }
+});
 
 router.get(
   '/mine',
@@ -431,5 +561,45 @@ router.patch(
     }
   }
 );
+
+router.get('/:id', async (req, res) => {
+  try {
+    const controller = new ViewProjectDetailsController(req.app.locals.db);
+    const id = req.params.id;
+
+    const project = await controller.getProjectDetails(id);
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project unavailable'
+      });
+    }
+
+    const [designer, company, relatedProjects, images] = await Promise.all([
+      controller.getDesignerInfo(id),
+      controller.getCompanyInfo(id),
+      controller.getRelatedPortfolio(id),
+      controller.getProjectImages(id)
+    ]);
+
+    return res.json({
+      success: true,
+      data: {
+        project: controller.formatProject(project),
+        designer,
+        company,
+        relatedProjects: relatedProjects.map(p => controller.formatProject(p)),
+        images
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      error: 'Unable to retrieve project details'
+    });
+  }
+});
 
 module.exports = router;
