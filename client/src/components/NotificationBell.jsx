@@ -126,7 +126,7 @@ async function markAsRead(notificationId) {
   }
 
   return (
-    <div
+    <div className="notification-menu"
       style={{
         position: 'relative',
         display: 'inline-flex',

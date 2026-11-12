@@ -825,3 +825,27 @@
   color: #605850;
 }
 
+/* Keep notification bell beside account dropdown */
+.notification-menu {
+  order: 4;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.account-menu {
+  order: 5;
+  margin-left: 0;
+}
+
+@media (max-width: 1250px) {
+  .main-links {
+    order: 6;
+  }
+}
+
+@media (max-width: 700px) {
+  .notification-menu { order: 2; }
+  .account-menu { order: 3; }
+  .header-search { order: 4; }
+  .main-links { order: 5; }
+}
