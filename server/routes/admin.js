@@ -11,7 +11,7 @@ const { ObjectId } = require('mongodb');
 const CreateUserAccountController = require('../controllers/CreateUserAccountController');
 const SuspendUserAccountController = require('../controllers/SuspendUserAccountController');
 const ViewUserAccountsController = require('../controllers/ViewUserAccountsController');
-
+const UpdateUserAccountController = require('../controllers/UpdateUserAccountController');
 const router = express.Router();
 
 const ADMIN_ROLE = 'user_admin'; // TODO: confirm this is the role value for the User Admin in User.js
@@ -95,6 +95,30 @@ router.patch('/users/:id/status', requireAdmin, async (req, res) => {
     );
 
     res.json({ success: true, message: `Account is now ${user.accountStatus}`, data: user });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// US03 — Update User Account
+router.patch('/users/:id', requireAdmin, async (req, res) => {
+  try {
+    const controller = new UpdateUserAccountController(req.app.locals.db);
+
+    const user = await controller.updateAccount(
+      req.adminId,
+      req.params.id,
+      {
+        name: req.body?.name,
+        email: req.body?.email
+      }
+    );
+
+    res.json({
+      success: true,
+      message: 'Account updated successfully',
+      data: user
+    });
   } catch (error) {
     sendError(res, error);
   }
