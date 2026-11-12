@@ -29,6 +29,11 @@ require('dotenv').config({
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 
+// Trust Render's reverse proxy for secure session cookies
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 app.use(express.json());
 
 // Serve uploaded project images
@@ -140,6 +145,28 @@ await db.collection('notifications').createIndex({
       '/api/consultation-messages',
       consultationMessageRoutes
     );
+
+    // Serve the React frontend in production
+    if (process.env.NODE_ENV === 'production') {
+      const frontendPath = path.join(__dirname, '../client/dist');
+
+      app.use(express.static(frontendPath));
+
+      // Support React Router pages when refreshed directly
+      app.use((req, res, next) => {
+        if (
+          req.method !== 'GET' ||
+          req.path === '/api' ||
+          req.path.startsWith('/api/') ||
+          req.path.startsWith('/uploads/') ||
+          !req.accepts('html')
+        ) {
+          return next();
+        }
+
+        res.sendFile(path.join(frontendPath, 'index.html'));
+      });
+    }
 
     app.use((err, req, res, next) => {
       if (err.code === 'EBADCSRFTOKEN') {
