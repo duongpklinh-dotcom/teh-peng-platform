@@ -4,10 +4,10 @@ const CategoryController = require('../controllers/CategoryController');
 
 const router = express.Router();
 
-router.use(requireAuth, requireRole('platform_management'));
+router.use(requireAuth);
 
 // US-PM01: create an IDP category
-router.post('/', async (req, res) => {
+router.post('/', requireRole('platform_management'), async (req, res) => {
   try {
     const controller = new CategoryController(req.app.locals.db);
     const result = await controller.createCategory(req.body, req.user.id);

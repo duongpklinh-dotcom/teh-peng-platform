@@ -4,8 +4,9 @@ const Project = require('../models/Project');
 
 class EditProjectController {
   constructor(db) {
-    this.projects = db.collection('projects');
-  }
+  this.projects = db.collection('projects');
+  this.categories = db.collection('categories');
+}
 
   // Retrieve a project belonging to the logged-in designer
   async getProjectDetails(projectId, designerId) {
@@ -138,12 +139,25 @@ class EditProjectController {
 
       if (categoryId === '' || categoryId === null) {
         updates.categoryId = null;
-      } else if (!ObjectId.isValid(categoryId)) {
+        updates.category = '';
+      } else if (
+        typeof categoryId !== 'string' ||
+        !ObjectId.isValid(categoryId)
+      ) {
         throw new Error('Invalid category ID');
       } else {
+        const category = await this.categories.findOne({
+          _id: new ObjectId(categoryId)
+        });
+
+        if (!category) {
+          throw new Error('Selected category does not exist');
+        }
+
         updates.categoryId = new ObjectId(categoryId);
+        updates.category = category.name;
       }
-    }
+}
 
     // Image paths are prepared by the upload route
     if (Object.hasOwn(updates, 'images')) {

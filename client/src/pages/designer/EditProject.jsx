@@ -72,6 +72,7 @@ export default function EditProject({ user }) {
   const [newImages, setNewImages] = useState([]);
 
   const [categories, setCategories] = useState([]);
+  const [savedCategoryName, setSavedCategoryName] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -113,6 +114,14 @@ export default function EditProject({ user }) {
         }
 
         const project = result.data;
+        if (active) {
+          setSavedCategoryName(project.category || project.categoryName || '');
+        }
+        console.log('Saved project category:', {
+          categoryId: project.categoryId,
+          category: project.category,
+          categoryName: project.categoryName
+        });
 
         const values = {
           title: project.title || '',
@@ -152,6 +161,30 @@ export default function EditProject({ user }) {
   }, [id, user?.role]);
 
   // Load available category choices
+  // Match the project's saved category name to a category ID
+useEffect(() => {
+  if (!savedCategoryName || categories.length === 0) return;
+
+  const matchingCategory = categories.find(
+    category =>
+      category.name?.trim().toLowerCase() ===
+      savedCategoryName.trim().toLowerCase()
+  );
+
+  if (!matchingCategory) return;
+
+  setForm(current =>
+    current.categoryId
+      ? current
+      : { ...current, categoryId: matchingCategory.id }
+  );
+
+  setOriginalForm(current =>
+    current.categoryId
+      ? current
+      : { ...current, categoryId: matchingCategory.id }
+  );
+}, [savedCategoryName, categories]);
   useEffect(() => {
     if (user?.role !== 'interior_designer') return;
 
@@ -159,7 +192,9 @@ export default function EditProject({ user }) {
 
     async function loadCategories() {
       try {
-        const response = await fetch('/api/projects/categories');
+        const response = await fetch('/api/categories', {
+        credentials: 'include'
+      });
 
         if (!response.ok) return;
 
@@ -283,7 +318,12 @@ export default function EditProject({ user }) {
       const projectData = new FormData();
 
       Object.entries(form).forEach(([key, value]) => {
-        if (key === 'categoryId' && !value) return;
+        if (key === 'categoryId' && !value) {
+          if (originalForm.categoryId) {
+            projectData.append('categoryId', '');
+          }
+          return;
+        }
 
         projectData.append(key, String(value));
       });

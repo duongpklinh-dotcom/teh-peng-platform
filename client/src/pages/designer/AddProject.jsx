@@ -15,7 +15,7 @@ const ALLOWED_TYPES = [
 const initialForm = {
   title: '',
   description: '',
-  category: '',
+  categoryId: '',
   style: '',
   propertyType: '',
   roomType: '',
@@ -29,6 +29,7 @@ export default function AddProject({ user }) {
   const navigate = useNavigate();
 
   const [form, setForm] = useState(initialForm);
+  const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -42,6 +43,31 @@ export default function AddProject({ user }) {
       });
     };
   }, []);
+
+  useEffect(() => {
+  if (user?.role !== 'interior_designer') return;
+
+  async function loadCategories() {
+    try {
+      const response = await fetch('/api/categories', {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Unable to load categories.');
+      }
+
+      const result = await response.json();
+      setCategories(result.data || []);
+
+    } catch (error) {
+      console.error('Category fetch error:', error);
+      setError('Unable to load project categories.');
+    }
+  }
+
+  loadCategories();
+}, [user?.role]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -136,7 +162,16 @@ export default function AddProject({ user }) {
       projectData.append('propertyType', form.propertyType);
       projectData.append('roomType', form.roomType);
       projectData.append('projectStatus', form.projectStatus);
-      projectData.append('category', form.category);
+      const selectedCategory = categories.find(
+        category => category.id === form.categoryId
+      );
+
+      if (!selectedCategory) {
+        throw new Error('Please select a valid project category.');
+      }
+
+      projectData.append('categoryId', selectedCategory.id);
+      projectData.append('category', selectedCategory.name);
 
       if (form.numRooms !== '') {
         projectData.append('numRooms', form.numRooms);
@@ -244,13 +279,19 @@ export default function AddProject({ user }) {
                 <label>
                   Project category
                   <select
-                    name="category"
-                    value={form.category}
+                    name="categoryId"
+                    value={form.categoryId}
                     onChange={handleChange}
+                    disabled={categories.length === 0}
+                    required
                   >
                     <option value="">Select category</option>
-                    <option value="Residential">Residential</option>
-                    <option value="Commercial">Commercial</option>
+
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
                   </select>
                 </label>
 
