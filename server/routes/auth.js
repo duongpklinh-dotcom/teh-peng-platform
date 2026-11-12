@@ -189,28 +189,6 @@ router.post('/logout', (req, res) => {
   });
 });
 
-// UA: View account login history
-router.get('/login-history', requireAdmin, async (req, res) => {
-  try {
-    const history = await req.app.locals.db
-      .collection('loginHistory')
-      .find({})
-      .sort({ createdAt: -1 })
-      .limit(100)
-      .toArray();
 
-    res.json({
-      success: true,
-      data: history.map(record => ({
-        id: record._id.toString(),
-        email: record.email,
-        status: record.status,
-        createdAt: record.createdAt
-      }))
-    });
-  } catch (error) {
-    sendError(res, error);
-  }
-});
 
 module.exports = router;
