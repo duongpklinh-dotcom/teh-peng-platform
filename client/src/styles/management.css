@@ -1,0 +1,114 @@
+/* Platform Management pages (Categories, Weekly Reports).
+   Own file so the shared theme.css does not need to change.
+   Reuses .panel, .form-stack, .pill, .admin-table, .admin-status from theme.css. */
+
+.pm-counter {
+  align-self: flex-end;
+  font-size: 12px;
+  color: #857a6f;
+  font-weight: 400;
+}
+
+.pm-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+  margin: 10px 0 30px;
+}
+
+.pm-metric {
+  border: 1px solid #e4ded6;
+  border-radius: 14px;
+  padding: 22px;
+  background: #fbf9f5;
+}
+
+.pm-metric span {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4e3c2e;
+}
+
+.pm-metric strong {
+  display: block;
+  margin: 10px 0 6px;
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: -.04em;
+  color: #292420;
+}
+
+.pm-metric small { color: #76695d; font-size: 12px; }
+.pm-up { color: #42613d; font-weight: 700; }
+.pm-down { color: #9a4637; font-weight: 700; }
+
+.pm-report-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.pm-report-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.pm-report-controls input {
+  border: 1px solid #d4cabe;
+  border-radius: 10px;
+  padding: 14px;
+  background: white;
+}
+
+.pm-report-controls .pill:disabled { opacity: .6; cursor: wait; }
+
+.pm-bar {
+  display: block;
+  height: 8px;
+  min-width: 2px;
+  border-radius: 8px;
+  background: #94562e;
+}
+
+.pm-table-wrap { width: 100%; overflow-x: auto; }
+.pm-table-wrap table { min-width: 520px; }
+.pm-table-wrap td, .pm-table-wrap th { font-size: 13px; }
+.pm-num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Print / Save as PDF: show only the report, compact enough for one page */
+@page { margin: 12mm; }
+
+@media print {
+  .site-header,
+  .site-footer,
+  .pm-no-print,
+  .role-preview { display: none !important; }
+
+  body, :root { background: white !important; }
+  .page.section { padding: 0 !important; min-height: 0 !important; max-width: none !important; }
+  .page h1 { font-size: 24px; margin: 6px 0 10px; text-align: left; }
+  .eyebrow { font-size: 10px; padding: 4px 10px; }
+
+  .panel { box-shadow: none !important; border: 0 !important; padding: 0 !important; margin: 0 !important; }
+  .admin-heading { margin-bottom: 10px; }
+  .admin-heading h2 { font-size: 18px; margin: 0 0 4px; }
+  .admin-heading .muted { font-size: 10px; margin: 0; }
+  .panel h3 { font-size: 14px; margin: 14px 0 6px !important; break-after: avoid; }
+
+  /* Three metric cards always in one row */
+  .pm-metrics { grid-template-columns: repeat(3, 1fr) !important; gap: 10px; margin: 8px 0 14px; }
+  .pm-metric { break-inside: avoid; padding: 12px 14px; border-radius: 10px; }
+  .pm-metric span { font-size: 11px; }
+  .pm-metric strong { font-size: 26px; margin: 6px 0 4px; }
+  .pm-metric small { font-size: 10px; }
+
+  /* Compact tables */
+  .pm-table-wrap table { min-width: 0 !important; width: 100%; }
+  .pm-table-wrap th, .pm-table-wrap td { padding: 5px 8px; font-size: 11px; }
+  .pm-bar { height: 6px; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  table, tr { break-inside: avoid; }
+}

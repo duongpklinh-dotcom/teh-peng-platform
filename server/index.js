@@ -19,6 +19,8 @@ const designerConsultationRoutes = require('./routes/designerConsultations');
 const consultationMessageRoutes = require('./routes/consultationMessages');
 const notificationRoutes = require('./routes/notifications');
 
+const categoryRoutes = require('./routes/categories');
+const reportRoutes = require('./routes/reports');
 
 require('dotenv').config({
   path: path.join(__dirname, '.env')
@@ -114,13 +116,14 @@ await db.collection('notifications').createIndex({
     }));
 
     app.use(csrfSynchronisedProtection);
-
+    app.use('/api/categories', categoryRoutes);
+    app.use('/api/reports', reportRoutes);
     app.use('/api/projects', projectRoutes);
     app.use('/api/auth', authRoutes);
     app.use('/api/admin', adminRoutes);
     app.use('/api/consultations', consultationRoutes);
     // Customer and designer in-app notifications
-app.use('/api/notifications', notificationRoutes);
+    app.use('/api/notifications', notificationRoutes);
 
     app.use(
       '/api/designer-availability',
