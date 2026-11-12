@@ -17,6 +17,8 @@ export default function UserAccounts() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', email: '' });
 
   async function loadAccounts() {
     const response = await fetch('/api/admin/users', {
@@ -114,6 +116,28 @@ export default function UserAccounts() {
     }
   }
 
+  async function saveAccount(event) {
+    event.preventDefault();
+    setError('');
+    setMessage('');
+    setBusy(true);
+
+    try {
+      await adminRequest(
+        `/api/admin/users/${editingId}`,
+        'PATCH',
+        editForm
+      );
+
+      await loadAccounts();
+      setEditingId(null);
+      setMessage('Account updated successfully.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
   const filtered = accounts.filter(account =>
     [account.name, account.email, account.role]
       .join(' ')
@@ -155,6 +179,50 @@ export default function UserAccounts() {
                 <p>
                   {account.role} · {account.accountStatus}
                 </p>
+                <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setEditingId(account.id);
+                  setEditForm({
+                    name: account.name,
+                    email: account.email
+                  });
+                }}
+              >
+                Edit Account
+              </button>
+
+              {editingId === account.id && (
+                <form onSubmit={saveAccount}>
+                  <input
+                    required
+                    placeholder="Name"
+                    value={editForm.name}
+                    onChange={e =>
+                      setEditForm({ ...editForm, name: e.target.value })
+                    }
+                  />
+
+                  <input
+                    required
+                    type="email"
+                    placeholder="Email"
+                    value={editForm.email}
+                    onChange={e =>
+                      setEditForm({ ...editForm, email: e.target.value })
+                    }
+                  />
+
+                  <button type="submit" disabled={busy}>
+                    Save Changes
+                  </button>
+
+                  <button type="button" onClick={() => setEditingId(null)}>
+                    Cancel
+                  </button>
+                </form>
+              )}
 
                 {['active', 'suspended'].includes(account.accountStatus) && (
                   <button
