@@ -203,3 +203,83 @@
     padding: 24px 20px;
   }
 }
+
+/* US05 search and filters, US03 edit dialog */
+.admin-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+
+.admin-filters input[type="search"] {
+  flex: 1 1 260px;
+  min-width: 200px;
+  border: 1px solid #d4cabe;
+  border-radius: 10px;
+  padding: 13px 15px;
+  background: #ffffff;
+}
+
+.admin-filters select {
+  min-height: 46px;
+  padding: 10px 14px;
+  border: 1px solid #d4cabe;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #4e3c2e;
+}
+
+.admin-filters .admin-secondary-btn {
+  min-height: 46px;
+}
+
+.admin-results-count {
+  margin: 0 0 6px;
+}
+
+.admin-table-refreshing {
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+
+.admin-empty-state {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.admin-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.admin-modal-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4e3c2e;
+}
+
+.admin-modal-form input {
+  border: 1px solid #d4cabe;
+  border-radius: 10px;
+  padding: 13px 15px;
+  background: #ffffff;
+}
+
+.admin-modal-form input:focus {
+  outline: 2px solid #94562e;
+  outline-offset: 1px;
+}

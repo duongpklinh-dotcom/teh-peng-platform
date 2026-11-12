@@ -13,15 +13,11 @@ const projectRoutes = require('./routes/projects');
 const authRoutes = require('./routes/auth');
 const consultationRoutes = require('./routes/consultations');
 const adminRoutes = require('./routes/admin');
-const designerAvailabilityRoutes = require('./routes/designerAvailability');
-const designerConsultationRoutes = require('./routes/designerConsultations');
-
-// NEW: Private messaging routes
-const consultationMessageRoutes = require('./routes/consultationMessages');
-const notificationRoutes = require('./routes/notifications');
+const categoryRoutes = require('./routes/categories');
+const reportRoutes = require('./routes/reports');
 
 require('dotenv').config({
-  path: path.join(__dirname, '.env')
+  path: path.join(__dirname, '.env'),
 });
 
 const app = express();
@@ -56,7 +52,7 @@ async function startServer() {
     }
 
     client = new MongoClient(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000
+      serverSelectionTimeoutMS: 10000,
     });
 
     await client.connect();
@@ -70,28 +66,12 @@ async function startServer() {
       { unique: true }
     );
 
-    await db.collection('designerAvailability').createIndex(
-      { designerId: 1 },
-      { unique: true }
+    // Platform Management: category names must be unique (case-insensitive).
+    await db.collection('categories').createIndex(
+      { nameKey: 1 },
+      { unique: true, partialFilterExpression: { nameKey: { $type: 'string' } } }
     );
 
-    // NEW: Retrieve messages by consultation and creation time
-    await db.collection('consultationMessages').createIndex({
-      consultationId: 1,
-      createdAt: 1,
-      _id: 1
-    });
-// Retrieve a user's notifications, newest first.
-await db.collection('notifications').createIndex({
-  recipientId: 1,
-  createdAt: -1
-});
-
-// Efficiently count unread notifications.
-await db.collection('notifications').createIndex({
-  recipientId: 1,
-  isRead: 1
-});
     app.locals.db = db;
     app.locals.mongoClient = client;
 
@@ -115,29 +95,19 @@ await db.collection('notifications').createIndex({
 
     app.use(csrfSynchronisedProtection);
 
+    // Register application routes
     app.use('/api/projects', projectRoutes);
     app.use('/api/auth', authRoutes);
     app.use('/api/consultations', consultationRoutes);
+
+    // Register user administration routes (US13 and US14)
     app.use('/api/admin', adminRoutes);
-    // Customer and designer in-app notifications
-app.use('/api/notifications', notificationRoutes);
 
-    app.use(
-      '/api/designer-availability',
-      designerAvailabilityRoutes
-    );
+    // Platform Management routes (Create IDP category, Weekly report)
+    app.use('/api/categories', categoryRoutes);
+    app.use('/api/reports', reportRoutes);
 
-    app.use(
-      '/api/designer-consultations',
-      designerConsultationRoutes
-    );
-
-    // NEW: Customer-designer private messaging API
-    app.use(
-      '/api/consultation-messages',
-      consultationMessageRoutes
-    );
-
+    // CSRF error handling
     app.use((err, req, res, next) => {
       if (err.code === 'EBADCSRFTOKEN') {
         return res.status(403).json({
@@ -150,6 +120,7 @@ app.use('/api/notifications', notificationRoutes);
     });
 
     console.log('MongoDB connected successfully');
+    console.log('Admin routes mounted at /api/admin');
 
     app.listen(PORT, () => {
       console.log(

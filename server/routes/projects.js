@@ -3,6 +3,8 @@ const { ObjectId } = require('mongodb');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const AddProjectController = require('../controllers/AddProjectController');
 const EditProjectController = require('../controllers/EditProjectController');
+const SearchProjectsController = require('../controllers/SearchProjectsController');
+const ViewProjectDetailsController = require('../controllers/ViewProjectDetailsController');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -115,6 +117,155 @@ const upload = multer({
   }
 });
 
+/*
+ * US-01: Search autocomplete suggestions
+ */
+router.get('/search/suggestions', async (req, res) => {
+  try {
+    const controller = new SearchProjectsController(
+      req.app.locals.db
+    );
+
+    const keyword = req.query.keyword;
+
+    if (typeof keyword !== 'string' || !keyword.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a valid keyword.'
+      });
+    }
+
+    const suggestions =
+      await controller.getAutocompleteSuggestions(keyword);
+
+    return res.status(200).json({
+      success: true,
+      data: suggestions
+    });
+
+  } catch (error) {
+    console.error('Autocomplete suggestions failed:', error);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Unable to retrieve search suggestions.'
+    });
+  }
+});
+
+/*
+ * US-01: Search interior design projects
+ */
+router.get('/search', async (req, res) => {
+  try {
+    const controller = new SearchProjectsController(
+      req.app.locals.db
+    );
+
+    const criteria = {
+      keyword: req.query.keyword ?? '',
+      selectedStyles: req.query.selectedStyles
+        ? String(req.query.selectedStyles).split(',')
+        : [],
+      propertyType: req.query.propertyType ?? '',
+      roomType: req.query.roomType ?? '',
+      projectStatus: req.query.projectStatus ?? '',
+      sortOption: req.query.sortOption ?? ''
+    };
+
+    if (!controller.validateSearchCriteria(criteria)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a valid keyword or at least one filter.'
+      });
+    }
+
+    const results = await controller.searchProjects(criteria);
+
+    const suggestions = results.length === 0
+      ? controller.suggestBroaderCriteria(criteria)
+      : [];
+
+    return res.status(200).json({
+      success: true,
+      data: results,
+      suggestions
+    });
+
+  } catch (error) {
+    console.error('Project search failed:', error);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Unable to search projects.'
+    });
+  }
+});
+
+/*
+ * US-02: Retrieve published MongoDB projects
+ */
+router.get('/public', async (req, res) => {
+  try {
+    const controller = new ViewProjectDetailsController(
+      req.app.locals.db
+    );
+
+    const projects = await controller.getPublishedProjects();
+
+    return res.status(200).json({
+      success: true,
+      data: projects
+    });
+
+  } catch (error) {
+    console.error('Published projects retrieval failed:', error);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Unable to retrieve published projects.'
+    });
+  }
+});
+
+/*
+ * US-02: Retrieve the selected designer's portfolio
+ */
+router.get('/designers/:designerId', async (req, res) => {
+  try {
+    const controller = new ViewProjectDetailsController(
+      req.app.locals.db
+    );
+
+    const portfolio = await controller.getDesignerPortfolio(
+      req.params.designerId
+    );
+
+    if (!portfolio) {
+      return res.status(404).json({
+        success: false,
+        error: 'Designer portfolio unavailable.'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: portfolio
+    });
+
+  } catch (error) {
+    console.error('Designer portfolio retrieval failed:', error);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Unable to retrieve designer portfolio.'
+    });
+  }
+});
+
+/*
+ * Existing feature: Add an interior design project
+ */
 router.post(
   '/',
   requireAuth,
