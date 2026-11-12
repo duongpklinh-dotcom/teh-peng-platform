@@ -11,7 +11,17 @@ test('Saves a new project with valid details', async () => {
 
   const fakeDb = {
     collection: (name) => {
-      assert.equal(name, 'projects');
+      if (name === 'categories') {
+        return {
+          findOne: async () => ({
+            _id: new ObjectId('6af5262a38ec1ce371d12f28'),
+            name: 'Industrial',
+            status: 'active'
+          })
+        };
+      }
+
+assert.equal(name, 'projects');
 
       return {
         insertOne: async (project) => {
