@@ -3,21 +3,46 @@ import React, { useEffect, useState } from 'react';
 
 import {
   Link,
+  useLocation,
   useParams
 } from 'react-router-dom';
 
 import ProjectCard from '../../components/ProjectCard';
 
-import {
-  getLocalDesignerPortfolio
-} from '../../data/sampleProjectDetails';
+/*
+ * US-02: View Interior Design Project Details
+ *
+ * Designer Portfolio
+ *
+ * All designer portfolios are retrieved from MongoDB.
+ *
+ * Supports:
+ * - Registered interior designers
+ * - Demo designer profiles without user accounts
+ * - Associated design companies
+ * - Published portfolio projects
+ * - Missing designer and company information
+ */
 
 export default function DesignerPortfolio() {
   const { id } = useParams();
+  const location = useLocation();
 
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Preserve navigation back to the selected project.
+  const returnPath =
+    typeof location.state?.from === 'string' &&
+    location.state.from.startsWith('/') &&
+    !location.state.from.startsWith('//')
+      ? location.state.from
+      : '/projects';
+
+  // --------------------------------------------
+  // RETRIEVE DESIGNER PORTFOLIO FROM MONGODB
+  // --------------------------------------------
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -27,23 +52,13 @@ export default function DesignerPortfolio() {
       setError('');
       setPortfolio(null);
 
-      // STEP 1: Look for a local sample studio.
-      const localPortfolio = getLocalDesignerPortfolio(id);
-
-      if (localPortfolio) {
-        setPortfolio(localPortfolio);
-        setLoading(false);
-        return;
-      }
-
-      // An unknown local studio should not be sent to MongoDB.
+      // All designer IDs must be MongoDB ObjectIds.
       if (!/^[0-9a-fA-F]{24}$/.test(id || '')) {
         setError('Designer portfolio unavailable.');
         setLoading(false);
         return;
       }
 
-      // STEP 2: Retrieve a MongoDB designer portfolio.
       try {
         const response = await fetch(
           `/api/projects/designers/${encodeURIComponent(id)}`,
@@ -62,10 +77,15 @@ export default function DesignerPortfolio() {
           );
         }
 
+        if (!result.data?.designer) {
+          throw new Error(
+            'Designer information is unavailable.'
+          );
+        }
+
         if (!abortController.signal.aborted) {
           setPortfolio(result.data);
         }
-
       } catch (err) {
         if (!abortController.signal.aborted) {
           setError(
@@ -85,6 +105,10 @@ export default function DesignerPortfolio() {
     return () => abortController.abort();
   }, [id]);
 
+  // --------------------------------------------
+  // LOADING STATE
+  // --------------------------------------------
+
   if (loading) {
     return (
       <div className="page section">
@@ -95,37 +119,60 @@ export default function DesignerPortfolio() {
     );
   }
 
+  // --------------------------------------------
+  // ERROR STATE
+  // --------------------------------------------
+
   if (error || !portfolio) {
     return (
       <div className="page section">
         <h1>Designer Portfolio Unavailable</h1>
 
         <p role="alert">
-          {error || 'Portfolio information is unavailable.'}
+          {error ||
+            'Portfolio information is unavailable.'}
         </p>
 
-        <Link className="pill" to="/projects">
-          Browse Projects
+        <Link className="pill" to={returnPath}>
+          ← Back to Projects
         </Link>
       </div>
     );
   }
 
-  const {
-    designer,
-    company,
-    projects = [],
-    isSample
-  } = portfolio;
+  // --------------------------------------------
+  // PORTFOLIO DATA
+  // --------------------------------------------
+
+  const designer = portfolio.designer;
+  const company = portfolio.company;
+
+  const projects = Array.isArray(portfolio.projects)
+    ? portfolio.projects
+    : [];
+
+  // The backend identifies demo designer profiles
+  // using designer.isDemo.
+  const isDemo = designer?.isDemo === true;
+
+  // --------------------------------------------
+  // DESIGNER PORTFOLIO PAGE
+  // --------------------------------------------
 
   return (
     <div className="page section">
 
-      <Link className="text-link" to="/projects">
-        ← Back to Projects
+      {/* BACK NAVIGATION */}
+
+      <Link
+        className="text-link"
+        to={returnPath}
+      >
+        ← Back to Previous Page
       </Link>
 
       {/* DESIGNER HEADER */}
+
       <header
         style={{
           marginTop: '35px',
@@ -137,10 +184,10 @@ export default function DesignerPortfolio() {
         </span>
 
         <h1 style={{ marginTop: '12px' }}>
-          {designer.name}
+          {designer.name || 'Interior Designer'}
         </h1>
 
-        {isSample && (
+        {isDemo && (
           <p
             style={{
               opacity: 0.7,
@@ -169,6 +216,7 @@ export default function DesignerPortfolio() {
       </header>
 
       {/* COMPANY INFORMATION */}
+
       <section
         id="company-information"
         style={{
@@ -186,7 +234,10 @@ export default function DesignerPortfolio() {
 
         {company ? (
           <>
-            <h3>{company.companyName}</h3>
+            <h3>
+              {company.companyName ||
+                'Design company'}
+            </h3>
 
             {company.companyDescription && (
               <p style={{ lineHeight: 1.8 }}>
@@ -215,7 +266,8 @@ export default function DesignerPortfolio() {
         )}
       </section>
 
-      {/* DESIGNER PROJECTS */}
+      {/* DESIGNER PORTFOLIO PROJECTS */}
+
       <section id="portfolio-projects">
         <span className="eyebrow">
           Selected Works
@@ -234,7 +286,9 @@ export default function DesignerPortfolio() {
                 key={project.id}
                 project={{
                   ...project,
-                  designer: designer.name
+                  designer:
+                    designer.name ||
+                    'Designer unavailable'
                 }}
               />
             ))}
@@ -247,6 +301,7 @@ export default function DesignerPortfolio() {
       </section>
 
       {/* CONSULTATION NAVIGATION */}
+
       <div style={{ marginTop: '45px' }}>
         <Link
           className="pill"

@@ -10,27 +10,24 @@ import {
 
 import ProjectCard from '../../components/ProjectCard';
 
-import {
-  getLocalProjectById,
-  getLocalRelatedProjects,
-  getSampleProjectDetails
-} from '../../data/sampleProjectDetails';
+// US-02: View Interior Design Project Details
+// All project records are retrieved from MongoDB.
 
 function getImageSource(image) {
-  const source = typeof image === 'string'
-    ? image
-    : image?.imagePath ||
-      image?.url ||
-      image?.src ||
-      '';
+  const source =
+    typeof image === 'string'
+      ? image
+      : image?.imagePath ||
+        image?.url ||
+        image?.src ||
+        '';
 
   if (typeof source !== 'string') {
     return '';
   }
 
   if (
-    (source.startsWith('/') &&
-      !source.startsWith('//')) ||
+    (source.startsWith('/') && !source.startsWith('//')) ||
     /^https?:\/\//i.test(source)
   ) {
     return source;
@@ -94,6 +91,10 @@ export default function ProjectDetails({ onSave }) {
       ? location.state.from
       : '/projects';
 
+  // --------------------------------------------
+  // RETRIEVE PROJECT DETAILS FROM MONGODB
+  // --------------------------------------------
+
   useEffect(() => {
     const abortController = new AbortController();
 
@@ -108,33 +109,6 @@ export default function ProjectDetails({ onSave }) {
       setCurrentImage(0);
       setImageFailed(false);
 
-      // STEP 1: Look for an existing local project.
-      const localProject = getLocalProjectById(id);
-
-      if (localProject) {
-        const details = getSampleProjectDetails(
-          localProject
-        );
-
-        setProject(details);
-        setDesigner(details.designerInfo);
-        setCompany(details.companyInfo);
-
-        setRelatedProjects(
-          getLocalRelatedProjects(localProject)
-        );
-
-        setImages(
-          details.images
-            .map(getImageSource)
-            .filter(Boolean)
-        );
-
-        setLoading(false);
-        return;
-      }
-
-      // STEP 2: Validate MongoDB project IDs.
       if (!/^[0-9a-fA-F]{24}$/.test(id || '')) {
         setError(
           'This project is unavailable or could not be retrieved.'
@@ -143,7 +117,6 @@ export default function ProjectDetails({ onSave }) {
         return;
       }
 
-      // STEP 3: Retrieve MongoDB project information.
       try {
         const response = await fetch(
           `/api/projects/${encodeURIComponent(id)}`,
@@ -168,26 +141,36 @@ export default function ProjectDetails({ onSave }) {
 
         const data = result.data;
 
+        if (!data?.project) {
+          throw new Error(
+            'This project is unavailable or could not be retrieved.'
+          );
+        }
+
         setProject(data.project);
-        setDesigner(data.designer);
-        setCompany(data.company);
+        setDesigner(data.designer || null);
+        setCompany(data.company || null);
 
         setRelatedProjects(
-          data.relatedProjects || []
+          Array.isArray(data.relatedProjects)
+            ? data.relatedProjects
+            : []
         );
 
-        const projectImages = (
-          data.images?.length
+        const projectImages =
+          Array.isArray(data.images) && data.images.length > 0
             ? data.images
-            : data.project?.images || []
-        );
+            : Array.isArray(data.project.images)
+              ? data.project.images
+              : data.project.image
+                ? [data.project.image]
+                : [];
 
-        setImages(
-          projectImages
-            .map(getImageSource)
-            .filter(Boolean)
-        );
+        const validImages = projectImages
+          .map(getImageSource)
+          .filter(Boolean);
 
+        setImages([...new Set(validImages)]);
       } catch (err) {
         if (!abortController.signal.aborted) {
           setError(
@@ -207,11 +190,15 @@ export default function ProjectDetails({ onSave }) {
     return () => abortController.abort();
   }, [id]);
 
+  // --------------------------------------------
+  // IMAGE GALLERY NAVIGATION
+  // --------------------------------------------
+
   function previousImage() {
     if (!images.length) return;
 
-    setCurrentImage(index =>
-      (index - 1 + images.length) % images.length
+    setCurrentImage(
+      index => (index - 1 + images.length) % images.length
     );
 
     setImageFailed(false);
@@ -220,8 +207,8 @@ export default function ProjectDetails({ onSave }) {
   function nextImage() {
     if (!images.length) return;
 
-    setCurrentImage(index =>
-      (index + 1) % images.length
+    setCurrentImage(
+      index => (index + 1) % images.length
     );
 
     setImageFailed(false);
@@ -230,6 +217,10 @@ export default function ProjectDetails({ onSave }) {
   function goBack() {
     navigate(returnPath);
   }
+
+  // --------------------------------------------
+  // LOADING AND ERROR STATES
+  // --------------------------------------------
 
   if (loading) {
     return (
@@ -260,27 +251,35 @@ export default function ProjectDetails({ onSave }) {
     );
   }
 
-  const isSample = project.isSample === true;
+  // --------------------------------------------
+  // STANDARDISED MONGODB DESIGNER PORTFOLIO LINK
+  // --------------------------------------------
 
-  const designerPortfolioPath = isSample
-    ? designer?.portfolioPath
-    : designer?.id
-      ? `/designers/${designer.id}`
-      : null;
+  const designerPortfolioPath = designer?.id
+    ? `/designers/${designer.id}`
+    : null;
+
+  const isSample = project.isSample === true;
 
   const budget = Number(project.estimatedBudget);
 
   const formattedBudget =
-    project.estimatedBudget != null &&
+    project.estimatedBudget !== null &&
+    project.estimatedBudget !== undefined &&
     project.estimatedBudget !== '' &&
     Number.isFinite(budget)
       ? `S$${budget.toLocaleString('en-SG')}`
       : null;
 
+  // --------------------------------------------
+  // PROJECT DETAILS PAGE
+  // --------------------------------------------
+
   return (
     <div className="page section">
 
       {/* BACK NAVIGATION */}
+
       <button
         type="button"
         className="text-link"
@@ -297,6 +296,7 @@ export default function ProjectDetails({ onSave }) {
       </button>
 
       {/* PROJECT HEADER */}
+
       <header style={{ marginBottom: '30px' }}>
         <span className="eyebrow">
           {[
@@ -323,6 +323,7 @@ export default function ProjectDetails({ onSave }) {
       </header>
 
       {/* IMAGE GALLERY */}
+
       <section aria-label="Project image gallery">
         {images.length > 0 ? (
           <>
@@ -340,6 +341,7 @@ export default function ProjectDetails({ onSave }) {
               </div>
             ) : (
               <img
+                key={images[currentImage]}
                 className="detail-image"
                 src={images[currentImage]}
                 alt={`${project.title} - Image ${currentImage + 1}`}
@@ -438,12 +440,16 @@ export default function ProjectDetails({ onSave }) {
         )}
       </section>
 
-      {/* PROJECT BODY */}
+      {/* PROJECT INFORMATION AND SIDEBAR */}
+
       <div
         className="detail-columns"
         style={{ marginTop: '40px' }}
       >
         <main>
+
+          {/* PROJECT OVERVIEW */}
+
           <section id="project-information">
             <span className="eyebrow">
               Project Overview
@@ -458,6 +464,7 @@ export default function ProjectDetails({ onSave }) {
           </section>
 
           {/* PROJECT SPECIFICATIONS */}
+
           <section style={{ marginTop: '36px' }}>
             <h2>Project Specifications</h2>
 
@@ -490,32 +497,30 @@ export default function ProjectDetails({ onSave }) {
                 value={project.projectStatus}
               />
 
-              {!isSample && (
-                <>
-                  <DetailField
-                    label="Number of Rooms"
-                    value={project.numRooms}
-                  />
+              <DetailField
+                label="Number of Rooms"
+                value={project.numRooms}
+              />
 
-                  <DetailField
-                    label="Area"
-                    value={
-                      project.areaSqm != null
-                        ? `${project.areaSqm} m²`
-                        : null
-                    }
-                  />
+              <DetailField
+                label="Area"
+                value={
+                  project.areaSqm !== null &&
+                  project.areaSqm !== undefined
+                    ? `${project.areaSqm} m²`
+                    : null
+                }
+              />
 
-                  <DetailField
-                    label="Estimated Budget"
-                    value={formattedBudget}
-                  />
-                </>
-              )}
+              <DetailField
+                label="Estimated Budget"
+                value={formattedBudget}
+              />
             </div>
           </section>
 
           {/* DESIGNER INFORMATION */}
+
           <section
             id="designer-information"
             style={{ marginTop: '45px' }}
@@ -528,7 +533,9 @@ export default function ProjectDetails({ onSave }) {
 
             {designer ? (
               <>
-                <h3>{designer.name}</h3>
+                <h3>
+                  {designer.name || 'Designer unavailable'}
+                </h3>
 
                 {designer.profileDescription && (
                   <p style={{ lineHeight: 1.8 }}>
@@ -547,6 +554,7 @@ export default function ProjectDetails({ onSave }) {
                   <Link
                     className="text-link"
                     to={designerPortfolioPath}
+                    state={{ from: location.pathname }}
                   >
                     View Full Designer Portfolio ↗
                   </Link>
@@ -558,6 +566,7 @@ export default function ProjectDetails({ onSave }) {
           </section>
 
           {/* COMPANY INFORMATION */}
+
           <section
             id="company-information"
             style={{ marginTop: '45px' }}
@@ -570,7 +579,9 @@ export default function ProjectDetails({ onSave }) {
 
             {company ? (
               <>
-                <h3>{company.companyName}</h3>
+                <h3>
+                  {company.companyName || 'Company unavailable'}
+                </h3>
 
                 {company.companyDescription && (
                   <p style={{ lineHeight: 1.8 }}>
@@ -599,6 +610,7 @@ export default function ProjectDetails({ onSave }) {
         </main>
 
         {/* PROJECT NAVIGATION */}
+
         <aside className="detail-aside">
           <h3>Explore This Project</h3>
 
@@ -634,6 +646,7 @@ export default function ProjectDetails({ onSave }) {
             <Link
               className="pill"
               to={designerPortfolioPath}
+              state={{ from: location.pathname }}
             >
               Designer Portfolio ↗
             </Link>
@@ -658,7 +671,8 @@ export default function ProjectDetails({ onSave }) {
         </aside>
       </div>
 
-      {/* RELATED PROJECTS */}
+      {/* RELATED PORTFOLIO PROJECTS */}
+
       <section
         id="related-projects"
         style={{ marginTop: '55px' }}
@@ -669,7 +683,7 @@ export default function ProjectDetails({ onSave }) {
 
         <h2>Other Projects by This Designer</h2>
 
-        {relatedProjects.length ? (
+        {relatedProjects.length > 0 ? (
           <div className="project-grid">
             {relatedProjects.map(item => (
               <ProjectCard
