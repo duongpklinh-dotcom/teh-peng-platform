@@ -106,3 +106,37 @@ test('Allows authenticated designers to access designer features', async () => {
 
   assert.equal(authorised, true);
 });
+
+test('Allows an existing account with no accountStatus field', async () => {
+  const userId = new ObjectId();
+  const req = {
+    session: { userId: userId.toString() },
+    app: {
+      locals: {
+        db: {
+          collection: () => ({
+            findOne: async () => ({
+              _id: userId,
+              email: 'legacy@example.com',
+              role: 'user_admin'
+            })
+          })
+        }
+      }
+    }
+  };
+
+  const res = {
+    status() {
+      throw new Error('Legacy account should remain accessible');
+    }
+  };
+
+  let authenticated = false;
+  await requireAuth(req, res, () => {
+    authenticated = true;
+  });
+
+  assert.equal(authenticated, true);
+  assert.equal(req.user.role, 'user_admin');
+});

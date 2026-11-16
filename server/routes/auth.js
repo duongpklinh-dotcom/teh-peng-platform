@@ -5,19 +5,6 @@ const { rateLimit } = require('express-rate-limit');
 
 const router = express.Router();
 
-async function recordLogin(req, status, user = null) {
-  try {
-    await req.app.locals.db.collection('loginHistory').insertOne({
-      userId: user?.id || null,
-      email: String(req.body?.email || '').trim().toLowerCase(),
-      status,
-      createdAt: new Date()
-    });
-  } catch (error) {
-    console.error('Unable to record login history:', error);
-  }
-}
-
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -74,7 +61,7 @@ router.post('/register', async (req, res) => {
 router.post('/login', loginLimiter, async (req, res) => {
   try {
     const controller = new AuthController(req.app.locals.db);
-    const user = await controller.login(req.body);
+    const user = await controller.login(req.body, req);
     await new Promise((resolve, reject) => {
     req.session.regenerate((error) => {
         if (error) reject(error);
@@ -91,16 +78,17 @@ router.post('/login', loginLimiter, async (req, res) => {
         else resolve();
     });
     });
-    await recordLogin(req, 'success', user);
+
     res.json({
       success: true,
       data: user
     });
   } catch (error) {
-    await recordLogin(req, 'failed');
     const status = error.message === 'Account is not active'
       ? 403
-      : 401;
+      : error.message.toLowerCase().includes('locked')
+        ? 423
+        : 401;
 
     res.status(status).json({
       success: false,
@@ -134,7 +122,7 @@ router.get('/me', async (req, res) => {
       _id: new ObjectId(req.session.userId)
     });
 
-    if (!user || user.accountStatus !== 'active') {
+    if (!user || (user.accountStatus && user.accountStatus !== 'active')) {
       return res.status(401).json({
         success: false,
         error: 'Account unavailable'
@@ -188,7 +176,6 @@ router.post('/logout', (req, res) => {
     });
   });
 });
-
 
 
 module.exports = router;

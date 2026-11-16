@@ -5,7 +5,6 @@ constructor({
   title,
   description,
   category,
-categoryId = null,
   style,
   propertyType,
   roomType,
@@ -20,7 +19,6 @@ categoryId = null,
     this.title = title;
     this.description = description;
     this.category = category;
-    this.categoryId = categoryId;
     this.style = style;
     this.propertyType = propertyType;
     this.roomType = roomType;
@@ -48,6 +46,13 @@ categoryId = null,
         this.areaSqm <= 0)) {
       throw new Error('Area must be a positive number');
     }
+
+    if (
+    this.category &&
+    !['Residential', 'Commercial'].includes(this.category)
+  ) {
+    throw new Error('Category must be Residential or Commercial');
+  }
 
     if (this.estimatedBudget !== null &&
         (typeof this.estimatedBudget !== 'number' ||

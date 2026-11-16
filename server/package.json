@@ -4,18 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "start": "node index.js",
-  "test": "npm run test:unit",
-  "test:unit": "vitest run tests/ConsultationController.test.mjs",
-  "test:watch": "vitest tests/ConsultationController.test.mjs",
-  "test:node": "node --test tests/*.test.js",
-  "test:all": "npm run test:unit && npm run test:node"
-},
+    "start": "node index.js",
+    "test": "node --test"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "connect-mongo": "^6.0.0",
@@ -26,9 +21,5 @@
     "express-session": "^1.19.0",
     "mongodb": "^7.7.0",
     "multer": "^2.5.0"
-  },
-  "devDependencies": {
-    "vitest": "^5.1.0"
   }
-
 }

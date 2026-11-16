@@ -9,6 +9,17 @@ class AuthController {
   getRegistrationRole() {
     return 'customer';
   }
+    async recordLoginEvent({ userId = null, email, outcome, reason = null, req }) {
+    await this.db.collection('loginHistory').insertOne({
+      userId: userId ? userId.toString() : null,
+      email: typeof email === 'string' ? email.trim().toLowerCase() : '',
+      outcome,
+      reason,
+      ipAddress: req?.ip || null,
+      userAgent: req?.get?.('user-agent') || null,
+      createdAt: new Date()
+    });
+  }
 
   async register({ name, email, password }) {
     if (typeof password !== 'string' || password.length < 12) {
@@ -54,7 +65,7 @@ class AuthController {
   }
 
 
-async login({ email, password }) {
+async login({ email, password }, req) {
   if (
     typeof email !== 'string' ||
     typeof password !== 'string'
@@ -69,14 +80,29 @@ async login({ email, password }) {
     email: normalizedEmail
   });
 
+  // Record attempts using an email that does not exist.
   if (!user) {
+    await this.recordLoginEvent({
+      userId: null,
+      email: normalizedEmail,
+      outcome: 'failed',
+      reason: 'Invalid email or password',
+      req
+    });
+
     throw new Error('Invalid email or password');
   }
 
-  if (
-    user.accountStatus !== 'active' &&
-    user.accountStatus !== 'suspended'
-  ) {
+  // Record attempts against locked or inactive accounts.
+  if (user.accountStatus && user.accountStatus !== 'active') {
+    await this.recordLoginEvent({
+      userId: user._id,
+      email: normalizedEmail,
+      outcome: 'blocked',
+      reason: 'Account is not active',
+      req
+    });
+
     throw new Error('Account is not active');
   }
 
@@ -85,58 +111,86 @@ async login({ email, password }) {
     user.passwordHash
   );
 
-  // UA04: only reveal the suspension to someone who knows the password
-  if (user.accountStatus === 'suspended') {
+  // Handle an incorrect password.
+  if (!passwordMatches) {
+    await users.updateOne(
+      {
+        _id: user._id,
+        $or: [
+          { accountStatus: 'active' },
+          { accountStatus: { $exists: false } },
+          { accountStatus: null }
+        ]
+      },
+      [
+        {
+          $set: {
+            failedLoginAttempts: {
+              $add: [
+                { $ifNull: ['$failedLoginAttempts', 0] },
+                1
+              ]
+            }
+          }
+        },
+        {
+          $set: {
+            accountStatus: {
+              $cond: [
+                { $gte: ['$failedLoginAttempts', 5] },
+                'locked',
+                { $ifNull: ['$accountStatus', 'active'] }
+              ]
+            }
+          }
+        }
+      ]
+    );
+
+    // Retrieve the latest status after updating the counter.
+    const updatedUser = await users.findOne({
+      _id: user._id
+    });
+
+    const isLocked = updatedUser?.accountStatus === 'locked';
+
+    // Record the incorrect-password attempt.
+    await this.recordLoginEvent({
+      userId: user._id,
+      email: normalizedEmail,
+      outcome: isLocked ? 'blocked' : 'failed',
+      reason: isLocked
+        ? 'Account locked after 5 failed login attempts'
+        : 'Incorrect password',
+      req
+    });
+
     throw new Error(
-      passwordMatches
-        ? 'Your account is suspended'
+      isLocked
+        ? 'Account is locked'
         : 'Invalid email or password'
     );
   }
 
-  
-
-    if (!passwordMatches) {
-    await users.findOneAndUpdate(
-        {
-        _id: user._id,
-        accountStatus: 'active'
-        },
-        [
-        {
-            $set: {
-            failedLoginAttempts: {
-                $add: [
-                { $ifNull: ['$failedLoginAttempts', 0] },
-                1
-                ]
-            }
-            }
-        },
-        {
-            $set: {
-            accountStatus: {
-                $cond: [
-                { $gte: ['$failedLoginAttempts', 5] },
-                'locked',
-                '$accountStatus'
-                ]
-            }
-            }
-        }
-        ],
-        { returnDocument: 'after' }
-    );
-
-    throw new Error('Invalid email or password');
-    }
-
-
-
+  // Reset failed attempts after a successful login.
   await users.updateOne(
     { _id: user._id },
-    { $set: { failedLoginAttempts: 0 } }
+    {
+      $set: {
+        accountStatus: 'active',
+        failedLoginAttempts: 0
+      }
+    }
   );
+
+  // Record successful login.
+  await this.recordLoginEvent({
+    userId: user._id,
+    email: normalizedEmail,
+    outcome: 'success',
+    reason: null,
+    req
+  });
 
   return {
     id: user._id.toString(),

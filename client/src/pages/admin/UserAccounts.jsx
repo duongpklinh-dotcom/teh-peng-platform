@@ -1,299 +1,142 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Workspace from '../../components/Workspace';
+import AccountsNav from './AccountsNav';
 
-const emptyForm = {
-  name: '',
-  email: '',
-  tempPassword: '',
-  role: 'customer'
-};
+
+async function getCsrfToken() {
+  const response = await fetch('/api/auth/csrf-token', { credentials: 'include' });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Unable to start secure request');
+  return result.data.csrfToken;
+}
 
 export default function UserAccounts() {
   const [accounts, setAccounts] = useState([]);
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState(emptyForm);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', email: '' });
 
-  async function loadAccounts() {
-    const response = await fetch('/api/admin/users', {
-      credentials: 'include'
-    });
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Unable to load accounts');
+  const loadAccounts = useCallback(async (term = '') => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/admin/accounts?search=${encodeURIComponent(term)}`, {
+        credentials: 'include'
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Unable to load accounts');
+      setAccounts(result.data || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-
-    setAccounts(result.data);
-  }
-
-  useEffect(() => {
-    loadAccounts()
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
   }, []);
 
-  async function adminRequest(url, method, body) {
-    const tokenResponse = await fetch('/api/auth/csrf-token', {
-      credentials: 'include'
-    });
-    const tokenResult = await tokenResponse.json();
+  useEffect(() => { loadAccounts(''); }, [loadAccounts]);
 
-    if (!tokenResponse.ok) {
-      throw new Error('Unable to get security token');
-    }
-
-    const response = await fetch(url, {
-      method,
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-csrf-token': tokenResult.data.csrfToken
-      },
-      body: JSON.stringify(body)
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Request failed');
-    }
-
-    return result;
-  }
-
-  async function createAccount(event) {
-    event.preventDefault();
+  async function unlockAccount(account) {
+    if (!window.confirm(`Unlock the account for ${account.email}?`)) return;
+    setBusyId(account.id);
     setError('');
     setMessage('');
-    setBusy(true);
-
     try {
-      await adminRequest('/api/admin/users', 'POST', form);
-      setForm(emptyForm);
-      await loadAccounts();
-      setMessage('Account created successfully.');
+      const csrfToken = await getCsrfToken();
+      const response = await fetch(`/api/admin/accounts/${account.id}/unlock`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'x-csrf-token': csrfToken }
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Unable to unlock account');
+      setMessage(`Account ${account.email} has been unlocked.`);
+      await loadAccounts(search);
     } catch (err) {
       setError(err.message);
     } finally {
-      setBusy(false);
+      setBusyId('');
     }
   }
-
-  async function changeStatus(account) {
-    const status =
-      account.accountStatus === 'active'
-        ? 'suspended'
-        : 'active';
-
-    if (!window.confirm(`${status === 'suspended' ? 'Suspend' : 'Reactivate'} ${account.name}?`)) {
-      return;
-    }
-
-    setError('');
-    setMessage('');
-    setBusy(true);
-
-    try {
-      await adminRequest(
-        `/api/admin/users/${account.id}/status`,
-        'PATCH',
-        { status }
-      );
-
-      await loadAccounts();
-      setMessage(`Account ${status} successfully.`);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveAccount(event) {
-    event.preventDefault();
-    setError('');
-    setMessage('');
-    setBusy(true);
-
-    try {
-      await adminRequest(
-        `/api/admin/users/${editingId}`,
-        'PATCH',
-        editForm
-      );
-
-      await loadAccounts();
-      setEditingId(null);
-      setMessage('Account updated successfully.');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  const filtered = accounts.filter(account =>
-    [account.name, account.email, account.role]
-      .join(' ')
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
 
   return (
     <Workspace label="User administration" title="User Accounts">
-      <div className="panel">
-        <h3>Manage Accounts</h3>
+      <AccountsNav />
 
-        {error && <p role="alert" style={{ color: '#b42318' }}>{error}</p>}
-        {message && <p role="status">{message}</p>}
+      <div className="panel admin-panel">
+        <div className="section-heading admin-heading">
+          <div>
+            <h2>Manage accounts</h2>
+            <p className="muted">Review account status and restore access to locked accounts.</p>
+          </div>
+          <span className="admin-count">{accounts.length} accounts</span>
+        </div>
 
-        <input
-          type="search"
-          placeholder="Search users by name, email or role"
-          value={search}
-          onChange={event => setSearch(event.target.value)}
-          style={{ width: '100%', marginBottom: 20 }}
-        />
+        <form className="admin-toolbar" onSubmit={event => { event.preventDefault(); loadAccounts(search); }}>
+          <input
+            aria-label="Search accounts"
+            placeholder="Search by name or email"
+            value={search}
+            onChange={event => setSearch(event.target.value)}
+          />
+          <button className="pill" type="submit">Search</button>
+        </form>
 
-        {loading ? (
-          <p>Loading accounts...</p>
-        ) : (
-          <div style={{ display: 'grid', gap: 12 }}>
-            {filtered.map(account => (
-              <div
-                key={account.id}
-                style={{
-                  padding: 16,
-                  border: '1px solid #ddd4c8',
-                  borderRadius: 10
-                }}
-              >
-                <strong>{account.name}</strong>
-                <p>{account.email}</p>
-                <p>
-                  {account.role} · {account.accountStatus}
-                </p>
-                <button
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  setEditingId(account.id);
-                  setEditForm({
-                    name: account.name,
-                    email: account.email
-                  });
-                }}
-              >
-                Edit Account
-              </button>
-
-              {editingId === account.id && (
-                <form onSubmit={saveAccount}>
-                  <input
-                    required
-                    placeholder="Name"
-                    value={editForm.name}
-                    onChange={e =>
-                      setEditForm({ ...editForm, name: e.target.value })
-                    }
-                  />
-
-                  <input
-                    required
-                    type="email"
-                    placeholder="Email"
-                    value={editForm.email}
-                    onChange={e =>
-                      setEditForm({ ...editForm, email: e.target.value })
-                    }
-                  />
-
-                  <button type="submit" disabled={busy}>
-                    Save Changes
-                  </button>
-
-                  <button type="button" onClick={() => setEditingId(null)}>
-                    Cancel
-                  </button>
-                </form>
-              )}
-
-                {['active', 'suspended'].includes(account.accountStatus) && (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => changeStatus(account)}
-                  >
-                    {account.accountStatus === 'active'
-                      ? 'Suspend Account'
-                      : 'Reactivate Account'}
-                  </button>
-                )}
-              </div>
-            ))}
-
-            {filtered.length === 0 && <p>No accounts found.</p>}
+        {message && <p className="admin-success" role="status">{message}</p>}
+        {error && <p className="admin-error" role="alert">{error}</p>}
+        {loading ? <p className="muted">Loading accounts...</p> : (
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Failed attempts</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accounts.length === 0 ? (
+                  <tr><td colSpan="5" className="admin-empty">No accounts found.</td></tr>
+                ) : accounts.map(account => (
+                  <tr key={account.id}>
+                    <td>
+                      <strong>{account.name || 'Unnamed user'}</strong>
+                      <span className="admin-subtext">{account.email}</span>
+                    </td>
+                    <td>{(account.role || 'customer').replaceAll('_', ' ')}</td>
+                    <td>
+                      <span className={`admin-status ${account.accountStatus === 'locked' ? 'is-locked' : 'is-active'}`}>
+                        {account.accountStatus || 'active'}
+                      </span>
+                    </td>
+                    <td>{account.failedLoginAttempts}</td>
+                    <td>
+                      <div className="admin-row-actions">
+                        <Link className="text-link" to={`/admin/login-history?search=${encodeURIComponent(account.email)}`}>
+                          View history
+                        </Link>
+                        {account.accountStatus === 'locked' ? (
+                          <button
+                            type="button"
+                            className="pill admin-action"
+                            disabled={busyId === account.id}
+                            onClick={() => unlockAccount(account)}
+                          >
+                            {busyId === account.id ? 'Unlocking...' : 'Unlock account'}
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-      </div>
-
-      <div className="panel" style={{ marginTop: 24 }}>
-        <h3>Create User Account</h3>
-
-        <form onSubmit={createAccount} style={{ display: 'grid', gap: 14 }}>
-          <input
-            required
-            placeholder="Full name"
-            value={form.name}
-            onChange={event =>
-              setForm({ ...form, name: event.target.value })
-            }
-          />
-
-          <input
-            required
-            type="email"
-            placeholder="Email address"
-            value={form.email}
-            onChange={event =>
-              setForm({ ...form, email: event.target.value })
-            }
-          />
-
-          <input
-            required
-            type="password"
-            minLength={12}
-            autoComplete="new-password"
-            placeholder="Temporary password (minimum 12 characters)"
-            value={form.tempPassword}
-            onChange={event =>
-              setForm({ ...form, tempPassword: event.target.value })
-            }
-          />
-
-          <select
-            value={form.role}
-            onChange={event =>
-              setForm({ ...form, role: event.target.value })
-            }
-          >
-            <option value="customer">Customer</option>
-            <option value="interior_designer">Interior Designer</option>
-            <option value="platform_management">Platform Management</option>
-            <option value="user_admin">User Admin</option>
-          </select>
-
-          <button type="submit" disabled={busy}>
-            {busy ? 'Processing...' : 'Create Account'}
-          </button>
-        </form>
       </div>
     </Workspace>
   );
